@@ -16,6 +16,7 @@ public class CmsLiteDbContext : DbContext, ICmsLiteDbContext
     public Microsoft.EntityFrameworkCore.DbSet<DbSet.ContentItem> ContentItemsTable => Set<DbSet.ContentItem>();
     public Microsoft.EntityFrameworkCore.DbSet<DbSet.ContentVersion> ContentVersionsTable => Set<DbSet.ContentVersion>();
     public Microsoft.EntityFrameworkCore.DbSet<DbSet.Directory> DirectoriesTable => Set<DbSet.Directory>();
+    public Microsoft.EntityFrameworkCore.DbSet<DbSet.Favorite> FavoritesTable => Set<DbSet.Favorite>();
 
     Microsoft.EntityFrameworkCore.DbSet<DbSet.User> ICmsLiteDbContext.Users => UsersTable;
 
@@ -28,6 +29,8 @@ public class CmsLiteDbContext : DbContext, ICmsLiteDbContext
     Microsoft.EntityFrameworkCore.DbSet<DbSet.ContentVersion> ICmsLiteDbContext.ContentVersions => ContentVersionsTable;
 
     Microsoft.EntityFrameworkCore.DbSet<DbSet.Tenant> ICmsLiteDbContext.Tenants => TenantsTable;
+
+    Microsoft.EntityFrameworkCore.DbSet<DbSet.Favorite> ICmsLiteDbContext.Favorites => Set<DbSet.Favorite>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -100,6 +103,19 @@ public class CmsLiteDbContext : DbContext, ICmsLiteDbContext
                 .WithMany()
                 .HasForeignKey(e => e.TenantId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+        modelBuilder.Entity<DbSet.Favorite>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.UserId, e.ContentItemId }).IsUnique();
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.NoAction);
+            entity.HasOne(e => e.ContentItem)
+                .WithMany()
+                .HasForeignKey(e => e.ContentItemId)
+                .OnDelete(DeleteBehavior.NoAction);
         });
     }
 }
@@ -197,6 +213,17 @@ public static class DbSet
         public Directory? Parent { get; set; }
         public ICollection<Directory> SubDirectories { get; set; } = new List<Directory>();
         public ICollection<ContentItem> ContentItems { get; set; } = new List<ContentItem>();
+    }
+    public class Favorite
+    {
+        public string Id { get; set; } = default!;
+        public string UserId { get; set; } = default!; // Foreign key
+        public string ContentItemId { get; set; } = default!; // Foreign key
+        public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+
+        // Navigation properties
+        public User User { get; set; } = default!;
+        public ContentItem ContentItem { get; set; } = default!;
     }
 }
 
