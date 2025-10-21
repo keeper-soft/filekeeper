@@ -1,25 +1,15 @@
-import {useState} from 'react'
 import {Navigate} from 'react-router-dom'
 import {
     makeStyles,
     shorthands,
     tokens,
     Button,
-    Input,
     Body1,
     Caption1,
     Title3,
-    Link,
-    Field,
-    MessageBar,
-    MessageBarBody,
-    MessageBarTitle,
-    Spinner,
     mergeClasses,
 } from '@fluentui/react-components'
-import {PersonRegular, LockClosedRegular, EyeRegular, EyeOffRegular} from '@fluentui/react-icons'
 import {useAuth} from '../contexts'
-//import {FileKeeperIllustration} from '../components/icons/FileKeeperIllustration'
 import {FileKeeper} from "../components/icons/FileKeeper";
 import {GoogleIcon} from "../components/icons/GoogleIcon";
 import {MicrosoftIcon} from "../components/icons/MicrosoftIcon";
@@ -201,49 +191,85 @@ const useStyles = makeStyles({
     },
 });
 
+// OAuth configuration - these will be environment variables in production
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID';
+const GITHUB_CLIENT_ID = import.meta.env.VITE_GITHUB_CLIENT_ID || 'YOUR_GITHUB_CLIENT_ID';
+
+// Generate cryptographically secure random string for CSRF protection
+const generateSecureRandom = async (length: number = 32): Promise<string> => {
+    const buffer = new Uint8Array(length);
+    crypto.getRandomValues(buffer);
+    return Array.from(buffer, byte => byte.toString(16).padStart(2, '0')).join('');
+};
+
 export const SignIn = () => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [passwordVisible, setPasswordVisible] = useState(false);
-    const [error, setError] = useState('');
-    const {login, isAuthenticated, isLoading} = useAuth();
+    const {isAuthenticated} = useAuth();
     const styles = useStyles();
 
     if (isAuthenticated) {
         return <Navigate to="/dashboard" replace/>;
     }
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-        if (!email || !password) {
-            setError('Please fill in all fields');
-            return;
-        }
-        const success = await login(email, password);
-        if (!success) {
-            setError('Invalid email or password');
-        }
-    };
+    const handleGoogleSignIn = async () => {
+        try {
+            // Generate nonce for CSRF protection
+            const nonce = await generateSecureRandom(32);
+            sessionStorage.setItem('pokeeper:google-nonce', nonce);
 
-    const togglePasswordVisibility = () => {
-        setPasswordVisible(!passwordVisible);
-    };
+            // Build Google OAuth URL
+            const redirectUri = `${window.location.origin}/auth/google/callback`;
+            const params = new URLSearchParams({
+                client_id: GOOGLE_CLIENT_ID,
+                redirect_uri: redirectUri,
+                response_type: 'code',
+                scope: 'openid email profile',
+                nonce: nonce,
+                state: nonce, // Also use as state for additional security
+                access_type: 'offline',
+                prompt: 'consent'
+            });
 
-    // TODO: Implement OAuth authentication handlers
-    const handleGoogleSignIn = () => {
-        console.log('Google OAuth sign-in initiated');
-        // OAuth redirect logic will be implemented in backend integration
+            // Redirect to Google OAuth
+            window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+        } catch (error) {
+            console.error('Failed to initiate Google sign-in:', error);
+        }
     };
 
     const handleMicrosoftSignIn = () => {
         console.log('Microsoft OAuth sign-in initiated');
-        // OAuth redirect logic will be implemented in backend integration
+        // TODO: Implement Microsoft OAuth when needed
     };
 
-    const handleGitHubSignIn = () => {
-        console.log('GitHub OAuth sign-in initiated');
-        // OAuth redirect logic will be implemented in backend integration
+    const handleGitHubSignIn = async () => {
+        try {
+            // Generate state with CSRF token
+            const csrf = await generateSecureRandom(32);
+            const statePayload = {
+                csrf,
+                redirect: '/dashboard'
+            };
+
+            // Store state in sessionStorage
+            sessionStorage.setItem('pokeeper:github-state', JSON.stringify(statePayload));
+
+            // Encode state for URL
+            const state = btoa(JSON.stringify(statePayload));
+
+            // Build GitHub OAuth URL
+            const redirectUri = `${window.location.origin}/auth/github/callback`;
+            const params = new URLSearchParams({
+                client_id: GITHUB_CLIENT_ID,
+                redirect_uri: redirectUri,
+                scope: 'read:user user:email',
+                state: state
+            });
+
+            // Redirect to GitHub OAuth
+            window.location.href = `https://github.com/login/oauth/authorize?${params.toString()}`;
+        } catch (error) {
+            console.error('Failed to initiate GitHub sign-in:', error);
+        }
     };
 
     return (
@@ -256,91 +282,30 @@ export const SignIn = () => {
                         Your secure and reliable solution for file management. Access your world, simplified.
                     </Body1>
                 </div>
-
                 <div className={styles.formContainer}>
                     <header className={styles.header}>
-                        <Title3 as="h2">Sign In</Title3>
-                        <Body1>Enter your details below to access your account.</Body1>
+                        <Title3 as="h2">Welcome</Title3>
+                        <Body1>Continue (Sig In or Sign Up) with one of your following accounts.</Body1>
                     </header>
-                                        <form onSubmit={handleSubmit} className={styles.form}>
-                        {error && (
-                            <MessageBar intent="error">
-                                <MessageBarBody>
-                                    <MessageBarTitle>Error</MessageBarTitle>
-                                    {error}
-                                </MessageBarBody>
-                            </MessageBar>
-                        )}
-
-                        <Field label="Email Address" required className={styles.inputField}>
-                            <Input
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="e.g., name@example.com"
-                                contentBefore={<PersonRegular/>}
-                                size="large"
-                            />
-                        </Field>
-
-                        <Field label="Password" required className={styles.inputField}>
-                            <Input
-                                type={passwordVisible ? 'text' : 'password'}
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Enter your password"
-                                contentBefore={<LockClosedRegular/>}
-                                contentAfter={
-                                    passwordVisible ?
-                                        <EyeOffRegular className={styles.passwordToggle}
-                                                       onClick={togglePasswordVisibility}/> :
-                                        <EyeRegular className={styles.passwordToggle}
-                                                    onClick={togglePasswordVisibility}/>
-                                }
-                                size="large"
-                            />
-                        </Field>
-
-                        <Button
-                            type="submit"
-                            appearance="primary"
-                            disabled={isLoading}
-                            className={styles.submitButton}
-                            size="large"
-                        >
-                            {isLoading ? <Spinner size="tiny"/> : 'Sign In'}
-                        </Button>
-
-                        <div className={styles.credentialsHint}>
-                            <Body1><strong>Demo Credentials</strong></Body1>
-                            <br/>
-                            <Caption1>Email: admin@email.com</Caption1>
-                            <br/>
-                            <Caption1>Password: biggerThan_6_chars</Caption1>
-                        </div>
-                    </form>
-
                     <div className={styles.divider}>
-                        <Caption1 className={styles.dividerText}>or</Caption1>
+                        <Caption1 className={styles.dividerText}></Caption1>
                     </div>
-
                     <div className={styles.oauthContainer}>
                         <Button
                             appearance="secondary"
                             size="large"
                             className={mergeClasses(styles.oauthButton, styles.googleButton)}
                             onClick={handleGoogleSignIn}
-                            icon={<GoogleIcon />}
+                            icon={<GoogleIcon/>}
                         >
                             Continue with Google
                         </Button>
-
                         <Button
                             appearance="secondary"
                             size="large"
                             className={mergeClasses(styles.oauthButton, styles.microsoftButton)}
                             onClick={handleMicrosoftSignIn}
-                            icon={<MicrosoftIcon />}
+                            icon={<MicrosoftIcon/>}
                         >
                             Continue with Microsoft
                         </Button>
@@ -350,18 +315,15 @@ export const SignIn = () => {
                             size="large"
                             className={mergeClasses(styles.oauthButton, styles.githubButton)}
                             onClick={handleGitHubSignIn}
-                            icon={<GitHubIcon />}
+                            icon={<GitHubIcon/>}
                         >
                             Continue with GitHub
                         </Button>
                     </div>
-
-
-
                     <footer className={styles.footer}>
-                        <Caption1>
-                            Don't have an account? <Link>Sign Up</Link>
-                        </Caption1>
+                        {/*<Caption1>*/}
+                        {/*    Don't have an account? <Link>Sign Up</Link>*/}
+                        {/*</Caption1>*/}
                     </footer>
                 </div>
             </div>

@@ -13,13 +13,14 @@ interface AuthProviderProps {
     children: ReactNode
 }
 
+export const GOOGLE_NONCE_STORAGE_KEY = "pokeeper:google-nonce";
+export const GITHUB_STATE_STORAGE_KEY = "pokeeper:github-state";
+
 export const AuthProvider = ({ children }: AuthProviderProps) => {
     const [isLoading, setIsLoading] = useState(true)
     const dispatch = useDispatch<AppDispatch>()
     const userState = useSelector((state: RootState) => state.user)
     useEffect(() => {
-        // Authentication state is now persisted and rehydrated by redux-persist.
-        // No need to manually restore from localStorage.
         setIsLoading(false);
     }, [dispatch])
 
@@ -61,10 +62,49 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         localStorage.removeItem('cms-lite-user')
     }
 
+    const loginWithOAuth = async (provider: string, code: string): Promise<boolean> => {
+        setIsLoading(true)
+        try {
+            // Call backend OAuth endpoint with authorization code
+            const { data } = await customAxios.post<LoginResponseSuccess>(`/auth/${provider}/token`, { code })
+
+            if (!data?.token || !data?.user) {
+                console.error('OAuth login API response missing required fields')
+                return false
+            }
+
+            // Store JWT token
+            localStorage.setItem('jwtToken', data.token);
+
+            // Update Redux state with user info
+            const { id, email: userEmail, firstName, lastName, tenant } = data.user
+            dispatch(logInUser({
+                id,
+                email: userEmail,
+                firstName,
+                lastName,
+                tenant,
+            }));
+
+            return true;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                const message = error.response?.data?.message || error.message || 'Unknown OAuth login error'
+                console.error('OAuth login API error:', message)
+            } else {
+                console.error('OAuth login error:', error)
+            }
+            return false
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
     const value: AuthContextType = {
         user: userState.isAuthenticated ? userState : null,
         isAuthenticated: userState.isAuthenticated,
         login,
+        loginWithOAuth,
         logout,
         isLoading
     }

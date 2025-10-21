@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { FluentProvider } from '@fluentui/react-components'
 import { AuthProvider } from './contexts'
+import { AuthCallback } from './contexts/auth/AuthCallback'
 // import { purpleTheme } from './themes/purpleTheme'
 import { teamsLightTheme } from "@fluentui/react-components";
 import { ProtectedRoute } from './components'
@@ -18,9 +19,7 @@ function App() {
         <Router>
           <Routes>
             <Route path="/login" element={<SignIn />} />
-            <Route
-              path="/dashboard"
-              element={
+            <Route path="/dashboard" element={
                 <ProtectedRoute>
                   <Dashboard />
                 </ProtectedRoute>
@@ -44,6 +43,8 @@ function App() {
             />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/auth/google/callback" element={<AuthCallback />} />
+              <Route path="/auth/github/callback" element={<AuthCallback />} />
           </Routes>
         </Router>
       </AuthProvider>

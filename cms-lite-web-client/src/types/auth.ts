@@ -16,6 +16,7 @@ export interface AuthContextType {
   user: User | null
   isAuthenticated: boolean
   login: (email: string, password: string) => Promise<boolean>
+  loginWithOAuth: (provider: string, code: string) => Promise<boolean>
   logout: () => void
   isLoading: boolean
 }
