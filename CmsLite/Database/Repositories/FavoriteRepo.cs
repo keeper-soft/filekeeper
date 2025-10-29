@@ -14,7 +14,7 @@ public class FavoriteRepo : IFavoriteRepo
         this.dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
     }
 
-    public async Task AddFavoriteAsync(string contentId, string userId, CancellationToken cancellationToken)
+    public async Task AddFavoriteAsync(int contentItemId, string userId, CancellationToken cancellationToken)
     {
         try
         {
@@ -22,7 +22,7 @@ public class FavoriteRepo : IFavoriteRepo
             {
                 Id = Guid.NewGuid().ToString(),
                 UserId = userId,
-                ContentItemId = contentId
+                ContentItemId = contentItemId
             };
             dbContext.FavoritesTable.Add(favorite);
             await dbContext.SaveChangesAsync(cancellationToken);
@@ -62,8 +62,8 @@ public class FavoriteRepo : IFavoriteRepo
         }
     }
 
-    public async Task<bool> FavoriteExistsAsync(string contentId, string userId, CancellationToken cancellationToken)
+    public async Task<bool> FavoriteExistsAsync(int contentItemId, string userId, CancellationToken cancellationToken)
     {
-        return await dbContext.FavoritesTable.AnyAsync(f => f.ContentItemId == contentId && f.UserId == userId, cancellationToken);
+        return await dbContext.FavoritesTable.AnyAsync(f => f.ContentItemId == contentItemId && f.UserId == userId, cancellationToken);
     }
 }

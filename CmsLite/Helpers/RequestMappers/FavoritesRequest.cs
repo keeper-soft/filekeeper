@@ -15,5 +15,5 @@ public record AddFavoriteRequest
     public string UserId { get; init; } = string.Empty;
 
     [Required]
-    public string ContentId { get; init; } = string.Empty;
+    public int ContentId { get; init; }
 }

@@ -218,7 +218,7 @@ public static class DbSet
     {
         public string Id { get; set; } = default!;
         public string UserId { get; set; } = default!; // Foreign key
-        public string ContentItemId { get; set; } = default!; // Foreign key
+        public int ContentItemId { get; set; } = default!; // Foreign key - must match ContentItem.Id type (int)
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 
         // Navigation properties
