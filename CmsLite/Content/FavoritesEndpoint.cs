@@ -20,25 +20,7 @@ public static class FavoriteEndpoint
     /// <param name="app">The endpoint route builder to which the favorite endpoints will be mapped.</param>
     public static void MapFavoritesEndpoint(this IEndpointRouteBuilder app)
     {
-        /// <summary>
-        /// GET /v1/favorites - Retrieves all favorite content items for the authenticated user.
-        /// </summary>
-        /// <remarks>
-        /// Extracts from HttpContext:
-        /// - ClaimTypes.PrimarySid: User ID from JWT token claims
-        /// - ClaimTypes.GroupSid: Tenant ID from JWT token claims
-        /// 
-        /// Validates user-tenant association before returning favorites.
-        /// </remarks>
-        /// <param name="dbContext">Database context for user/tenant validation.</param>
-        /// <param name="favoriteRepo">Repository for favorite operations.</param>
-        /// <param name="context">HTTP context containing user claims from authentication.</param>
-        /// <param name="cancellationToken">Cancellation token for async operations.</param>
-        /// <returns>
-        /// 200 OK with List&lt;Favorite&gt; - User's favorite content items.
-        /// 401 Unauthorized - Missing or invalid user/tenant claims, or user-tenant validation failed.
-        /// </returns>
-        app.MapGet("/v1/favorites", async (ICmsLiteDbContext dbContext, IFavoriteRepo favoriteRepo, HttpContext context, CancellationToken cancellationToken) =>
+        app.MapGet("/v1/favorites", async (CmsLiteDbContext dbContext, IFavoriteRepo favoriteRepo, HttpContext context, CancellationToken cancellationToken) =>
         {
             var userId = context.User.FindFirst(ClaimTypes.PrimarySid)?.Value;
             if (string.IsNullOrEmpty(userId))
@@ -66,35 +48,7 @@ public static class FavoriteEndpoint
         .Produces<List<Favorite>>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status401Unauthorized);
 
-        /// <summary>
-        /// POST /v1/favorites - Adds a content item to the authenticated user's favorites.
-        /// </summary>
-        /// <remarks>
-        /// Extracts from HttpContext:
-        /// - ClaimTypes.PrimarySid: User ID from JWT token claims
-        /// - ClaimTypes.GroupSid: Tenant ID from JWT token claims
-        /// 
-        /// Parses from Request Body (JSON):
-        /// - AddFavoriteRequest.UserId: User ID making the favorite request
-        /// - AddFavoriteRequest.ContentId: Content item ID to add as favorite
-        /// 
-        /// Validation performed:
-        /// - User-tenant association validation
-        /// - UserId from token must match UserId in request body
-        /// - ContentId must be a positive integer
-        /// - Favorite must not already exist
-        /// </remarks>
-        /// <param name="dbContext">Database context for user/tenant validation.</param>
-        /// <param name="favoriteRepo">Repository for favorite operations.</param>
-        /// <param name="context">HTTP context containing user claims and request body.</param>
-        /// <param name="cancellationToken">Cancellation token for async operations.</param>
-        /// <returns>
-        /// 201 Created - Favorite successfully added, location header with /favorites/{contentId}.
-        /// 400 Bad Request - Invalid request body, missing UserId, or invalid ContentId.
-        /// 401 Unauthorized - Missing/invalid claims or UserId mismatch.
-        /// 409 Conflict - Favorite already exists.
-        /// </returns>
-        app.MapPost("/v1/favorites", async (ICmsLiteDbContext dbContext, IFavoriteRepo favoriteRepo, HttpContext context, CancellationToken cancellationToken) =>
+        app.MapPost("/v1/favorites", async (CmsLiteDbContext dbContext, IFavoriteRepo favoriteRepo, HttpContext context, CancellationToken cancellationToken) =>
         {
             var userId = context.User.FindFirst(ClaimTypes.PrimarySid)?.Value;
             var tenantId = context.User.FindFirst(ClaimTypes.GroupSid)?.Value;
@@ -145,34 +99,7 @@ public static class FavoriteEndpoint
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status409Conflict);
 
-        /// <summary>
-        /// DELETE /v1/favorites/{contentId} - Removes a content item from the authenticated user's favorites.
-        /// </summary>
-        /// <remarks>
-        /// Extracts from Route:
-        /// - contentId: Content item ID to remove from favorites (must be positive integer)
-        /// 
-        /// Extracts from HttpContext:
-        /// - ClaimTypes.PrimarySid: User ID from JWT token claims
-        /// - ClaimTypes.GroupSid: Tenant ID from JWT token claims
-        /// 
-        /// Validation performed:
-        /// - User-tenant association validation
-        /// - ContentId must be a positive integer
-        /// - Favorite must exist before removal
-        /// </remarks>
-        /// <param name="contentId">Content item ID from route parameter.</param>
-        /// <param name="dbContext">Database context for user/tenant validation.</param>
-        /// <param name="favoriteRepo">Repository for favorite operations.</param>
-        /// <param name="context">HTTP context containing user claims from authentication.</param>
-        /// <param name="cancellationToken">Cancellation token for async operations.</param>
-        /// <returns>
-        /// 204 No Content - Favorite successfully removed.
-        /// 400 Bad Request - ContentId is not a positive integer.
-        /// 401 Unauthorized - Missing/invalid claims or user-tenant validation failed.
-        /// 404 Not Found - Favorite does not exist.
-        /// </returns>
-        app.MapDelete("/v1/favorites/{contentId:int}", async (int contentId, ICmsLiteDbContext dbContext, IFavoriteRepo favoriteRepo, HttpContext context, CancellationToken cancellationToken) =>
+        app.MapDelete("/v1/favorites/{contentId:int}", async (int contentId, CmsLiteDbContext dbContext, IFavoriteRepo favoriteRepo, HttpContext context, CancellationToken cancellationToken) =>
         {
             var userId = context.User.FindFirst(ClaimTypes.PrimarySid)?.Value;
             if (string.IsNullOrEmpty(userId))
