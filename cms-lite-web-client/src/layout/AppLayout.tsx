@@ -24,6 +24,8 @@ import {
     selectDirectoryTreeCurrentDirectory,
     selectDirectoryTreeLastFetchedTenant,
     setCurrentDirectory,
+    selectDirectoryTreeSelectedFileIds,
+    setSelectedFiles,
     type DirectoryNode,
 } from '../store/slices/directoryTree'
 import {FileDetailsModal} from '../components/FileDetailsModal'
@@ -196,13 +198,13 @@ export const AppLayout = ({children}: AppLayoutProps) => {
     const directoryError = useSelector(selectDirectoryTreeError)
     const currentDirectory = useSelector(selectDirectoryTreeCurrentDirectory)
     const lastFetchedTenant = useSelector(selectDirectoryTreeLastFetchedTenant)
+    const selectedFiles = useSelector(selectDirectoryTreeSelectedFileIds)
     const [viewportWidth, setViewportWidth] = useState(() =>
         typeof window === 'undefined' ? BREAKPOINTS.DESKTOP : window.innerWidth,
     )
     const [isNavMenuCollapsed, setIsNavMenuCollapsed] = useState<boolean>(() =>
         typeof window === 'undefined' ? false : window.innerWidth < BREAKPOINTS.TABLET,
     )
-    const [selectedFiles, setSelectedFiles] = useState<string[]>([])
     const [detailsState, setDetailsState] = useState<FileDetailsState>({
         open: false,
         isLoading: false,
@@ -248,10 +250,6 @@ export const AppLayout = ({children}: AppLayoutProps) => {
     }, [dispatch, directoryLoading, isAuthenticated, lastFetchedTenant, user?.tenant?.name])
 
     useEffect(() => {
-        setSelectedFiles([])
-    }, [currentDirectory?.id])
-
-    useEffect(() => {
         if (typeof window === 'undefined') {
             return undefined
         }
@@ -285,15 +283,14 @@ export const AppLayout = ({children}: AppLayoutProps) => {
     }
 
     const handleItemSelect = (item: DirectoryNode) => {
-        dispatch(setCurrentDirectory(item.id));
-        setSelectedFiles([]); // Clear file selection when switching directories
+        dispatch(setCurrentDirectory(item.id))
         if (isOverlayNav) {
-            setIsNavMenuCollapsed(true);
+            setIsNavMenuCollapsed(true)
         }
     }
 
     const handleFileSelect = (fileIds: string[]) => {
-        setSelectedFiles(fileIds)
+        dispatch(setSelectedFiles(fileIds))
     }
 
     const handleNewDirectory = () => {
@@ -926,7 +923,7 @@ export const AppLayout = ({children}: AppLayoutProps) => {
                 successMessage: `${removedCount} file${removedCount === 1 ? '' : 's'} successfully removed.`,
             })
 
-            setSelectedFiles([])
+            dispatch(setSelectedFiles([]))
 
             if (rootDirectory?.id) {
                 dispatch(setCurrentDirectory(rootDirectory.id))

@@ -14,6 +14,7 @@ import customAxios from '../../utilities/custom-axios'
 const initialState: DirectoryTreeState = {
   root: null,
   currentDirectoryId: null,
+  selectedFileIds: [],
   loading: false,
   error: null,
   lastFetchedTenant: null,
@@ -85,9 +86,14 @@ const directoryTreeSlice = createSlice({
     setRoot: (state, action: PayloadAction<DirectoryNode | null>) => {
       state.root = action.payload
       state.currentDirectoryId = action.payload?.id ?? null
+      state.selectedFileIds = []
     },
     setCurrentDirectory: (state, action: PayloadAction<string | null>) => {
       state.currentDirectoryId = action.payload
+      state.selectedFileIds = []
+    },
+    setSelectedFiles: (state, action: PayloadAction<string[]>) => {
+      state.selectedFileIds = action.payload
     },
     moveBackToParent: (state) => {
       if (!state.root || !state.currentDirectoryId) {
@@ -97,11 +103,13 @@ const directoryTreeSlice = createSlice({
       const current = findDirectoryById(state.root, state.currentDirectoryId)
       if (current?.parentId) {
         state.currentDirectoryId = current.parentId
+        state.selectedFileIds = []
       }
     },
     clearDirectoryTree: (state) => {
       state.root = null
       state.currentDirectoryId = null
+      state.selectedFileIds = []
       state.loading = false
       state.error = null
       state.lastFetchedTenant = null
@@ -115,11 +123,13 @@ const directoryTreeSlice = createSlice({
       .addCase(fetchDirectoryTree.pending, (state) => {
         state.loading = true
         state.error = null
+        state.selectedFileIds = []
       })
       .addCase(fetchDirectoryTree.fulfilled, (state, action) => {
         const root = mapDirectoryTree(action.payload.rootDirectory)
         state.root = root
         state.currentDirectoryId = root?.id ?? null
+        state.selectedFileIds = []
         state.loading = false
         state.error = null
         state.lastFetchedTenant = action.payload.tenantName
@@ -134,7 +144,7 @@ const directoryTreeSlice = createSlice({
   },
 })
 
-export const { setRoot, setCurrentDirectory, moveBackToParent, clearDirectoryTree } = directoryTreeSlice.actions
+export const { setRoot, setCurrentDirectory, setSelectedFiles, moveBackToParent, clearDirectoryTree } = directoryTreeSlice.actions
 
 export const selectDirectoryTreeRoot = (state: RootState) => state.directoryTree.root
 export const selectDirectoryTreeLoading = (state: RootState) => state.directoryTree.loading
@@ -148,6 +158,17 @@ export const selectDirectoryTreeTotals = (state: RootState) => ({
   totalDirectories: state.directoryTree.totalDirectories,
   totalContentItems: state.directoryTree.totalContentItems,
 })
+export const selectDirectoryTreeSelectedFileIds = (state: RootState): string[] => state.directoryTree.selectedFileIds
+export const selectDirectoryTreeSelectedContentItems = (state: RootState): ContentItemNode[] => {
+  const directory = selectDirectoryTreeCurrentDirectory(state)
+  if (!directory || state.directoryTree.selectedFileIds.length === 0) {
+    return []
+  }
+
+  return directory.contentItems.filter((item) =>
+    state.directoryTree.selectedFileIds.includes(item.id),
+  )
+}
 
 export type { DirectoryNode, ContentItemNode } from '../../types/directories.ts'
 
