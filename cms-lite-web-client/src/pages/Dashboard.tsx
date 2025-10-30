@@ -1,10 +1,18 @@
-import { AppLayout } from '../layout/AppLayout'
-import { SmartDashboard } from './SmartDashboard'
+import {AppLayout} from '../layout';
+import {SmartDashboard} from './SmartDashboard';
+import {useDispatch, useSelector} from 'react-redux';
+import {useEffect} from "react";
+import {selectCurrentView} from "../store/slices/navigation.ts";
 
 export const Dashboard = () => {
-  return (
-    <AppLayout>
-      <SmartDashboard />
-    </AppLayout>
-  )
+    const dispatch = useDispatch();
+    const pageViewNavigation = useSelector(selectCurrentView);
+    useEffect(() => {
+        dispatch({type: 'navigation/setCurrentView', payload: 'dashboard'})
+    }, [pageViewNavigation, dispatch]);
+    return (
+        <AppLayout>
+            <SmartDashboard/>
+        </AppLayout>
+    );
 }
