@@ -3,7 +3,7 @@ import {FluentProvider} from '@fluentui/react-components'
 import {AuthProvider} from './contexts'
 // import { purpleTheme } from './themes/purpleTheme'
 import {teamsLightTheme} from "@fluentui/react-components";
-import {ProtectedRoute} from './components'
+import {ProtectedRoute, NavigationTracker} from './components'
 import {SignIn, Dashboard, JsonViewer, XmlViewer, Favorites} from './pages'
 import './App.css'
 import {useEffect} from 'react'
@@ -16,6 +16,7 @@ function App() {
         <FluentProvider theme={teamsLightTheme}>
             <AuthProvider>
                 <Router>
+                    <NavigationTracker/>
                     <Routes>
                         <Route path="/login" element={<SignIn/>}/>
                         <Route

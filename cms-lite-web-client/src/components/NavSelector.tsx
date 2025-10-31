@@ -1,4 +1,4 @@
-import type {JSXElement} from "@fluentui/react-components";
+import type {JSXElement, OptionOnSelectData, SelectionEvents} from "@fluentui/react-components";
 import {
     Dropdown,
     makeStyles,
@@ -6,10 +6,9 @@ import {
     useId,
 } from "@fluentui/react-components";
 import type {DropdownProps} from "@fluentui/react-components";
-import {viewPagesOptions} from "../store/slices/navigation.ts";
+import {selectCurrentView, viewPagesOptions, matchPathToView} from "../store/slices/navigation.ts";
 import {useNavigate} from "react-router-dom";
 import {useSelector} from "react-redux";
-import {selectCurrentView} from "../store/slices/navigation.ts";
 
 const useStyles = makeStyles({
     root: {
@@ -20,23 +19,41 @@ const useStyles = makeStyles({
         gap: "2px",
         maxWidth: "400px",
     },
+    selector: {
+        "& button": {
+            paddingBottom: "11px"
+        }
+    }
 });
 
 export const NavSelector = (props: Partial<DropdownProps>): JSXElement => {
     const styles = useStyles();
     const navigate = useNavigate();
     const dropdownId = useId("dropdown-nav-selector");
+    const currentView = useSelector(selectCurrentView);
+    const handleOptionSelect = (event: SelectionEvents, data: OptionOnSelectData) => {
+        event.preventDefault();
+        const value: string | undefined = data.optionValue
+        if (!value) {
+            return
+        }
+        const destination = matchPathToView(value) ?? value
+        if (destination.startsWith('/')) {
+            navigate(destination)
+            return
+        }
+        //TODO: Manage this case better than this
+        alert("This page is not yet implemented");
+    }
     return (
         <div className={styles.root}>
-            <Dropdown id={dropdownId} placeholder="Navigate to" appearance="underline" {...props}>
+            <Dropdown className={styles.selector} id={dropdownId} placeholder="Navigate to"
+                      appearance="underline" {...props} onOptionSelect={handleOptionSelect}>
                 {viewPagesOptions.map(([path, label]: [string, string]) => (
                     <Option
                         key={path}
-                        onSelect={() => {
-                            console.log(`Navigating to /${path}`);
-                            navigate(`/${path}`);
-                        }}
                         value={path}
+                        disabled={path === currentView}
                     >
                         {label}
                     </Option>

@@ -117,7 +117,7 @@ export const Favorites = () => {
             Back to Content Explorer
           </Button>
           <Subtitle1>
-            Curate frequently used items without leaving the content workspace.
+            Your favorites
           </Subtitle1>
         </div>
 

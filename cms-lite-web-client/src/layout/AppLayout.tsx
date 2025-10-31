@@ -14,7 +14,7 @@ import {
     BREAKPOINTS,
     getNavMenuWidth,
 } from './layoutConstants'
-import {useAuth} from '../hooks/useAuth'
+import {useAuth} from '../contexts'
 import type {AppDispatch} from '../store/store'
 import {
     fetchDirectoryTree,
@@ -1042,6 +1042,8 @@ export const AppLayout = ({children}: AppLayoutProps) => {
                     <div className={styles.actionBarWrapper}>
                         <ActionBar
                             hasSelection={selectedFiles.length > 0}
+                            selectedFilesCount={selectedFiles.length}
+                            onToggleFavorite={() => console.log('Toggle favorite (AppLayout) for:', selectedFiles)}
                             onNewDirectory={handleNewDirectory}
                             disableNewDirectory={!effectiveDirectory || !user?.tenant?.name}
                             onImportContent={handleImportContent}

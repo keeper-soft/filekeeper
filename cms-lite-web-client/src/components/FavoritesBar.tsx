@@ -38,7 +38,6 @@ export const FavoritesBar = ({ selectedCount, onRemoveFavorites, isRemoving = fa
         disabled={!hasSelection || isRemoving}
         onClick={onRemoveFavorites}
       >
-        Remove from Favorites
       </Button>
     </div>
   )
