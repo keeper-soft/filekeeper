@@ -48,7 +48,12 @@ public static class FavoriteEndpoint
         .Produces<List<Favorite>>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status401Unauthorized);
 
-        app.MapPost("/v1/favorites", async (CmsLiteDbContext dbContext, IFavoriteRepo favoriteRepo, HttpContext context, CancellationToken cancellationToken) =>
+        app.MapPost("/v1/favorites", async (
+            CmsLiteDbContext dbContext,
+            IFavoriteRepo favoriteRepo,
+            IContentItemRepo contentItemRepo,
+            HttpContext context,
+            CancellationToken cancellationToken) =>
         {
             var userId = context.User.FindFirst(ClaimTypes.PrimarySid)?.Value;
             var tenantId = context.User.FindFirst(ClaimTypes.GroupSid)?.Value;
@@ -66,28 +71,31 @@ public static class FavoriteEndpoint
             {
                 return Results.BadRequest();
             }
-            if (favoriteItem.UserId != userId)
-            {
-                return Results.Unauthorized();
-            }
-            if (favoriteItem.ContentId <= 0)
-            {
-                return Results.BadRequest("ContentId must be a positive integer.");
-            }
             if (string.IsNullOrEmpty(favoriteItem.UserId))
             {
                 return Results.BadRequest("UserId is required.");
+            }
+            if (favoriteItem.UserId != userId)
+            {
+                return Results.Unauthorized();
             }
             if (!isValid)
             {
                 return Results.Unauthorized();
             }
-            var favoriteAlreadyExists = await favoriteRepo.FavoriteExistsAsync(favoriteItem.ContentId, favoriteItem.UserId, cancellationToken);
+            var directoryId = AddFavoriteRequest.GetDirectoryIdFromContentId(favoriteItem.ContentId);
+            var resourceName = AddFavoriteRequest.GetResourceNameFromContentId(favoriteItem.ContentId);
+            var favoriteAlreadyExists = await favoriteRepo.FavoriteExistsAsyncByDirectoryResourceId(directoryId, resourceName, favoriteItem.UserId, cancellationToken);
             if (favoriteAlreadyExists)
             {
                 return Results.Conflict("Favorite already exists.");
             }
-            await favoriteRepo.AddFavoriteAsync(favoriteItem.ContentId, favoriteItem.UserId, cancellationToken);
+            var contentItemId = await contentItemRepo.GetContentItemIdByDirectoryAndResourceAsync(directoryId, resourceName, cancellationToken);
+            if (contentItemId == null || contentItemId <= 0)
+            {
+                return Results.BadRequest("Content item does not exist.");
+            }
+            await favoriteRepo.AddFavoriteAsync(contentItemId.Value, favoriteItem.UserId, cancellationToken);
             return Results.Created($"/favorites/{favoriteItem.ContentId}", favoriteItem.ContentId);
         })
         .RequireAuthorization()

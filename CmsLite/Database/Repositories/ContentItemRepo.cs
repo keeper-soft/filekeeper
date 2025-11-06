@@ -51,7 +51,7 @@ public class ContentItemRepo : IContentItemRepo
             .FirstOrDefaultAsync(ci => ci.TenantId == tenantId && ci.Resource == resource && !ci.IsDeleted);
     }
 
-    public async Task<ContentDetailsResponse?> GetContentItemDetailsAsync(string tenantId, string resource)
+    public async Task<ContentDetailsResponse?> GetContentItemDetailsAsync(string tenantId, string resource, CancellationToken cancellationToken)
     {
         // Get the main content item with related data
         var contentItem = await dbContext.ContentItemsTable
@@ -164,5 +164,14 @@ public class ContentItemRepo : IContentItemRepo
             >= kb => $"{bytes / (double)kb:F1} KB",
             _ => $"{bytes} bytes"
         };
+    }
+
+    Task<int?> IContentItemRepo.GetContentItemIdByDirectoryAndResourceAsync(string directoryId, string resource, CancellationToken cancellationToken)
+    {
+        return dbContext.ContentItemsTable
+            .Where(ci => ci.DirectoryId == directoryId && ci.Resource == resource && !ci.IsDeleted)
+            .OrderByDescending(ci => ci.LatestVersion)
+            .Select(ci => (int?)ci.Id)
+            .FirstOrDefaultAsync();
     }
 }

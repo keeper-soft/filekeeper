@@ -66,4 +66,11 @@ public class FavoriteRepo : IFavoriteRepo
     {
         return await dbContext.FavoritesTable.AnyAsync(f => f.ContentItemId == contentItemId && f.UserId == userId, cancellationToken);
     }
+
+    public async Task<bool> FavoriteExistsAsyncByDirectoryResourceId(string directoryId, string resourceName, string userId, CancellationToken cancellationToken)
+    {
+        return await dbContext.FavoritesTable
+            .Include(f => f.ContentItem)
+            .AnyAsync(f => f.ContentItem.DirectoryId == directoryId && f.ContentItem.Resource.Equals(resourceName, StringComparison.InvariantCultureIgnoreCase) && f.UserId == userId, cancellationToken);
+    }
 }
