@@ -68,10 +68,6 @@ public static class FavoriteEndpoint
                 {
                     return Results.Unauthorized();
                 }
-                if (string.Compare(tenantId, tenant, StringComparison.OrdinalIgnoreCase) != 0)
-                {
-                    return Results.Unauthorized();
-                }
                 var favoriteItem = await context.Request.ReadFromJsonAsync<AddFavoriteRequest>(cancellationToken: cancellationToken);
                 var (isValid, errorResult) = await DbHelper.ValidateUserTenantAsync(userId, tenantId, dbContext);
                 if (favoriteItem is null)
@@ -138,10 +134,6 @@ public static class FavoriteEndpoint
                     return Results.Unauthorized();
                 }
                 if (string.IsNullOrEmpty(tenantId))
-                {
-                    return Results.Unauthorized();
-                }
-                if (string.Compare(tenantId, tenant, StringComparison.OrdinalIgnoreCase) != 0)
                 {
                     return Results.Unauthorized();
                 }

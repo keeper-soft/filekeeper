@@ -138,15 +138,15 @@ export const NavMenu = ({
                             isLoading = false,
                             error = null,
                         }: NavMenuProps) => {
-    const styles = useStyles()
+    const styles = useStyles();
     const initialExpanded = useMemo(() => {
         const ids = new Set<string>()
         if (root) {
-            ids.add(root.id)
+            ids.add(root.id);
         }
-        return ids
-    }, [root])
-    const [expandedItems, setExpandedItems] = useState<Set<string>>(initialExpanded)
+        return ids;
+    }, [root]);
+    const [expandedItems, setExpandedItems] = useState<Set<string>>(initialExpanded);
 
     useEffect(() => {
         setExpandedItems(initialExpanded)

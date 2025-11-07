@@ -28,6 +28,7 @@ import {
     setSelectedFiles,
     type DirectoryNode,
 } from '../store/slices/directoryTree'
+import { addFavorite, selectFavoritesAdding } from '../store/slices/favorites'
 import {FileDetailsModal} from '../components/FileDetailsModal'
 import {CreateDirectoryDialog} from '../components/CreateDirectoryDialog'
 import {SoftDeleteDialog, type SoftDeleteItem} from '../components/SoftDeleteDialog'
@@ -123,23 +124,24 @@ interface InfoDialogState {
     primaryLabel?: string
     isLoading?: boolean
 }
+
 const findDirectoryPathSegments = (root: DirectoryNode | null, targetId: string | null): string[] => {
     if (!root || !targetId) {
-        return []
+        return [];
     }
 
     const traverse = (node: DirectoryNode, trail: string[]): string[] | null => {
         const nextTrail = [...trail, node.name]
         if (node.id === targetId) {
-            return nextTrail
+            return nextTrail;
         }
         for (const child of node.subDirectories) {
-            const result = traverse(child, nextTrail)
+            const result = traverse(child, nextTrail);
             if (result) {
-                return result
+                return result;
             }
         }
-        return null
+        return null;
     }
 
     return traverse(root, []) ?? []
@@ -177,17 +179,18 @@ const extractFilenameFromContentDisposition = (header?: string | null): string |
 const appendPathSegment = (basePath: string, segment: string): string => {
     const trimmedSegment = segment.trim()
     if (!trimmedSegment) {
-        return basePath === '/' ? '/' : `${basePath}/`
+        return basePath === '/' ? '/' : `${basePath}/`;
     }
     if (basePath === '/' || basePath.length === 0) {
-        return `/${trimmedSegment}`
+        return `/${trimmedSegment}`;
     }
-    return `${basePath}/${trimmedSegment}`
+    return `${basePath}/${trimmedSegment}`;
 }
 
 const delay = (ms: number) => new Promise<void>((resolve) => {
-    setTimeout(resolve, ms)
+    setTimeout(resolve, ms);
 });
+
 export const AppLayout = ({children}: AppLayoutProps) => {
     const styles = useStyles();
     const dispatch = useDispatch<AppDispatch>();
@@ -199,6 +202,7 @@ export const AppLayout = ({children}: AppLayoutProps) => {
     const currentDirectory = useSelector(selectDirectoryTreeCurrentDirectory);
     const lastFetchedTenant = useSelector(selectDirectoryTreeLastFetchedTenant);
     const selectedFiles = useSelector(selectDirectoryTreeSelectedFileIds);
+    const isAddingFavorite = useSelector(selectFavoritesAdding)
     const [viewportWidth, setViewportWidth] = useState(() =>
         typeof window === 'undefined' ? BREAKPOINTS.DESKTOP : window.innerWidth,
     );
@@ -305,6 +309,7 @@ export const AppLayout = ({children}: AppLayoutProps) => {
         () => findDirectoryPathSegments(rootDirectory, effectiveDirectory?.id ?? null),
         [rootDirectory, effectiveDirectory?.id],
     );
+
     const parentPathDisplay = useMemo(() => buildPathString(parentPathSegments), [parentPathSegments]);
 
     const proposedDirectoryPath = useMemo(
@@ -1014,6 +1019,38 @@ export const AppLayout = ({children}: AppLayoutProps) => {
         setIsNavMenuCollapsed(prev => !prev)
     }
 
+    const handleToggleFavorite = useCallback(() => {
+        if (selectedFiles.length !== 1 || isAddingFavorite) {
+            return
+        }
+
+        const contentId = selectedFiles[0]
+        const selectedItemName = effectiveDirectory?.contentItems
+            .find(item => item.id === contentId)?.resource ?? 'Selected item'
+
+        dispatch(addFavorite(contentId))
+            .unwrap()
+            .then(() => {
+                setInfoDialogState({
+                    open: true,
+                    title: 'Favorite added',
+                    description: `"${selectedItemName}" is now available in your favorites.`,
+                    primaryLabel: 'Close',
+                    isLoading: false,
+                })
+            })
+            .catch((errorMessage: string | undefined) => {
+                const message = errorMessage ?? 'Failed to add this item to favorites. Please try again.'
+                setInfoDialogState({
+                    open: true,
+                    title: 'Unable to add favorite',
+                    description: message,
+                    primaryLabel: 'Close',
+                    isLoading: false,
+                })
+            })
+    }, [dispatch, effectiveDirectory, isAddingFavorite, selectedFiles])
+
     return (
         <div className={styles.appContainer}>
             {/* Header spans full width */}
@@ -1048,7 +1085,8 @@ export const AppLayout = ({children}: AppLayoutProps) => {
                         <ActionBar
                             hasSelection={selectedFiles.length > 0}
                             selectedFilesCount={selectedFiles.length}
-                            onToggleFavorite={() => console.log('Toggle favorite (AppLayout) for:', selectedFiles)}
+                            onToggleFavorite={handleToggleFavorite}
+                            isFavoriteInProgress={isAddingFavorite}
                             onNewDirectory={handleNewDirectory}
                             disableNewDirectory={!effectiveDirectory || !user?.tenant?.name}
                             onImportContent={handleImportContent}

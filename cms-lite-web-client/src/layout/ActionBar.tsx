@@ -72,6 +72,7 @@ interface ActionBarProps {
     canDownload?: boolean
     onDownloadContent?: () => void
     onToggleFavorite?: () => void
+    isFavoriteInProgress?: boolean
 }
 
 export const ActionBar = ({
@@ -87,10 +88,11 @@ export const ActionBar = ({
                               canDownload,
                               onDownloadContent,
                               onToggleFavorite,
+                              isFavoriteInProgress = false,
                           }: ActionBarProps) => {
-    const styles = useStyles()
+    const styles = useStyles();
 
-    const favoriteDisabled = !(selectedFilesCount === 1)
+    const favoriteDisabled = !(selectedFilesCount === 1) || isFavoriteInProgress
 
     return (
         <div className={styles.actionBar}>

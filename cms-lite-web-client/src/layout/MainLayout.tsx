@@ -133,7 +133,7 @@ export const MainLayout = ({children, variant = 'explorer'}: MainLayoutProps) =>
 
     const handleToggleFavorite = () => {
         // TODO: implement toggle favorite behavior
-        console.log('Toggle favorite (MainLayout) for:', selectedFiles)
+        console.log('Toggle favorite (MainLayout) for:', selectedFiles);
     }
 
     if (variant === 'viewer') {

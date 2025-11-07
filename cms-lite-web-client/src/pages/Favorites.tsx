@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -26,6 +26,7 @@ import {
   selectFavoritesRemoving,
 } from '../store/slices/favorites'
 import { FavoritesBar } from '../components'
+import { InfoDialog } from '../components/modals/InfoDialog'
 
 const useStyles = makeStyles({
   pageRoot: {
@@ -68,6 +69,11 @@ export const Favorites = () => {
   const styles = useStyles()
   const navigate = useNavigate()
   const dispatch = useDispatch<AppDispatch>()
+  const [dialogState, setDialogState] = useState({
+    open: false,
+    title: '',
+    description: '',
+  })
 
   const selectedFileIds = useSelector(selectDirectoryTreeSelectedFileIds)
   const favorites = useSelector(selectFavoritesItems)
@@ -94,9 +100,29 @@ export const Favorites = () => {
       return
     }
 
-    void dispatch(removeFavorites(selectedFileIds))
-    dispatch(setSelectedFiles([]))
+    const count = selectedFileIds.length
+    dispatch(removeFavorites(selectedFileIds))
+      .unwrap()
+      .then(() => {
+        setDialogState({
+          open: true,
+          title: count === 1 ? 'Favorite removed' : 'Favorites removed',
+          description: `${count} item${count === 1 ? '' : 's'} removed from favorites.`,
+        })
+        dispatch(setSelectedFiles([]))
+      })
+      .catch((errorMessage: string | undefined) => {
+        setDialogState({
+          open: true,
+          title: 'Unable to remove favorites',
+          description: errorMessage ?? 'We could not remove those favorites. Please try again.',
+        })
+      })
   }, [dispatch, isRemoving, selectedFileIds])
+
+  const handleDismissDialog = useCallback(() => {
+    setDialogState((prev) => ({ ...prev, open: false }))
+  }, [])
 
   const handleRefresh = useCallback(() => {
     if (isLoading) {
@@ -154,6 +180,12 @@ export const Favorites = () => {
           </div>
         </div>
       </div>
+      <InfoDialog
+        open={dialogState.open}
+        title={dialogState.title}
+        description={dialogState.description}
+        onDismiss={handleDismissDialog}
+      />
     </MainLayout>
   )
 }
