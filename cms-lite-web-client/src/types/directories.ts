@@ -47,6 +47,7 @@ export interface DirectoryTreeApiResponse {
 export interface DirectoryTreeState {
     root: DirectoryNode | null
     currentDirectoryId: string | null
+    selectedFileIds: string[]
     loading: boolean
     error: string | null
     lastFetchedTenant: string | null

@@ -1,22 +1,22 @@
-import { useState, useEffect } from 'react'
-import type { ReactNode } from 'react'
+import {useState, useEffect} from 'react'
+import type {ReactNode} from 'react'
 import axios from 'axios'
-import { useDispatch, useSelector } from 'react-redux'
-import type { AuthContextType, LoginResponseSuccess } from '../../types/auth'
+import {useDispatch, useSelector} from 'react-redux'
+import type {AuthContextType, LoginResponseSuccess} from '../../types/auth'
 import customAxios from '../../utilities/custom-axios'
-import { AuthContext } from './AuthContext'
-import { logInUser, logOutUser } from '../../store/slices/user'
-import type { AppDispatch, RootState } from '../../store/store'
-import { clearDirectoryTree } from '../../store/slices/directoryTree'
+import {AuthContext} from './AuthContext'
+import {logInUser, logOutUser} from '../../store/slices/user'
+import type {AppDispatch, RootState} from '../../store/store'
+import {clearDirectoryTree} from '../../store/slices/directoryTree'
 
 interface AuthProviderProps {
     children: ReactNode
 }
 
-export const AuthProvider = ({ children }: AuthProviderProps) => {
+export const AuthProvider = ({children}: AuthProviderProps) => {
     const [isLoading, setIsLoading] = useState(true)
-    const dispatch = useDispatch<AppDispatch>()
-    const userState = useSelector((state: RootState) => state.user)
+    const dispatch = useDispatch<AppDispatch>();
+    const userState = useSelector((state: RootState) => state.user);
     useEffect(() => {
         // Authentication state is now persisted and rehydrated by redux-persist.
         // No need to manually restore from localStorage.
@@ -26,13 +26,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const login = async (email: string, password: string): Promise<boolean> => {
         setIsLoading(true)
         try {
-            const { data } = await customAxios.post<LoginResponseSuccess>('/auth/login', { email, password })
+            const {data} = await customAxios.post<LoginResponseSuccess>('/auth/login', {email, password})
             if (!data?.token || !data?.user) {
                 console.error('Login API response missing required fields')
                 return false
             }
             localStorage.setItem('jwtToken', data.token);
-            const { id, email: userEmail, firstName, lastName, tenant} = data.user
+            const {id, email: userEmail, firstName, lastName, tenant} = data.user
             dispatch(logInUser({
                 id,
                 email: userEmail,

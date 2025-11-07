@@ -1,10 +1,10 @@
-import { AppLayout } from '../layout/AppLayout'
-import { SmartDashboard } from './SmartDashboard'
+import {AppLayout} from '../layout';
+import {SmartDashboard} from './SmartDashboard';
 
 export const Dashboard = () => {
-  return (
-    <AppLayout>
-      <SmartDashboard />
-    </AppLayout>
-  )
+    return (
+        <AppLayout>
+            <SmartDashboard/>
+        </AppLayout>
+    );
 }

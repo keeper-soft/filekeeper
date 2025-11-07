@@ -604,7 +604,7 @@ public static class ContentEndpoints
 
             try
             {
-                var contentDetails = await contentItemRepo.GetContentItemDetailsAsync(tenantId, resource);
+                var contentDetails = await contentItemRepo.GetContentItemDetailsAsync(tenantId, resource, cancellationToken);
 
                 if (contentDetails == null)
                 {

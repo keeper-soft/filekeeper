@@ -14,7 +14,7 @@ import {
     BREAKPOINTS,
     getNavMenuWidth,
 } from './layoutConstants'
-import {useAuth} from '../hooks/useAuth'
+import {useAuth} from '../contexts'
 import type {AppDispatch} from '../store/store'
 import {
     fetchDirectoryTree,
@@ -24,8 +24,11 @@ import {
     selectDirectoryTreeCurrentDirectory,
     selectDirectoryTreeLastFetchedTenant,
     setCurrentDirectory,
+    selectDirectoryTreeSelectedFileIds,
+    setSelectedFiles,
     type DirectoryNode,
 } from '../store/slices/directoryTree'
+import { addFavorite, selectFavoritesAdding } from '../store/slices/favorites'
 import {FileDetailsModal} from '../components/FileDetailsModal'
 import {CreateDirectoryDialog} from '../components/CreateDirectoryDialog'
 import {SoftDeleteDialog, type SoftDeleteItem} from '../components/SoftDeleteDialog'
@@ -121,23 +124,24 @@ interface InfoDialogState {
     primaryLabel?: string
     isLoading?: boolean
 }
+
 const findDirectoryPathSegments = (root: DirectoryNode | null, targetId: string | null): string[] => {
     if (!root || !targetId) {
-        return []
+        return [];
     }
 
     const traverse = (node: DirectoryNode, trail: string[]): string[] | null => {
         const nextTrail = [...trail, node.name]
         if (node.id === targetId) {
-            return nextTrail
+            return nextTrail;
         }
         for (const child of node.subDirectories) {
-            const result = traverse(child, nextTrail)
+            const result = traverse(child, nextTrail);
             if (result) {
-                return result
+                return result;
             }
         }
-        return null
+        return null;
     }
 
     return traverse(root, []) ?? []
@@ -175,66 +179,69 @@ const extractFilenameFromContentDisposition = (header?: string | null): string |
 const appendPathSegment = (basePath: string, segment: string): string => {
     const trimmedSegment = segment.trim()
     if (!trimmedSegment) {
-        return basePath === '/' ? '/' : `${basePath}/`
+        return basePath === '/' ? '/' : `${basePath}/`;
     }
     if (basePath === '/' || basePath.length === 0) {
-        return `/${trimmedSegment}`
+        return `/${trimmedSegment}`;
     }
-    return `${basePath}/${trimmedSegment}`
+    return `${basePath}/${trimmedSegment}`;
 }
 
 const delay = (ms: number) => new Promise<void>((resolve) => {
-    setTimeout(resolve, ms)
+    setTimeout(resolve, ms);
 });
+
 export const AppLayout = ({children}: AppLayoutProps) => {
-    const styles = useStyles()
-    const dispatch = useDispatch<AppDispatch>()
-    const navigate = useNavigate()
-    const {user, isAuthenticated} = useAuth()
-    const rootDirectory = useSelector(selectDirectoryTreeRoot)
-    const directoryLoading = useSelector(selectDirectoryTreeLoading)
-    const directoryError = useSelector(selectDirectoryTreeError)
-    const currentDirectory = useSelector(selectDirectoryTreeCurrentDirectory)
-    const lastFetchedTenant = useSelector(selectDirectoryTreeLastFetchedTenant)
+    const styles = useStyles();
+    const dispatch = useDispatch<AppDispatch>();
+    const navigate = useNavigate();
+    const {user, isAuthenticated} = useAuth();
+    const rootDirectory = useSelector(selectDirectoryTreeRoot);
+    const directoryLoading = useSelector(selectDirectoryTreeLoading);
+    const directoryError = useSelector(selectDirectoryTreeError);
+    const currentDirectory = useSelector(selectDirectoryTreeCurrentDirectory);
+    const lastFetchedTenant = useSelector(selectDirectoryTreeLastFetchedTenant);
+    const selectedFiles = useSelector(selectDirectoryTreeSelectedFileIds);
+    const isAddingFavorite = useSelector(selectFavoritesAdding)
     const [viewportWidth, setViewportWidth] = useState(() =>
         typeof window === 'undefined' ? BREAKPOINTS.DESKTOP : window.innerWidth,
-    )
+    );
     const [isNavMenuCollapsed, setIsNavMenuCollapsed] = useState<boolean>(() =>
         typeof window === 'undefined' ? false : window.innerWidth < BREAKPOINTS.TABLET,
-    )
-    const [selectedFiles, setSelectedFiles] = useState<string[]>([])
+    );
     const [detailsState, setDetailsState] = useState<FileDetailsState>({
         open: false,
         isLoading: false,
         error: null,
         data: null,
         resourceId: null,
-    })
+    });
     const [createDirectoryState, setCreateDirectoryState] = useState<CreateDirectoryState>({
         open: false,
         name: '',
         isSubmitting: false,
         error: null,
-    })
+    });
     const [softDeleteState, setSoftDeleteState] = useState<SoftDeleteState>({
         open: false,
         items: [],
         isSubmitting: false,
         error: null,
         successMessage: null,
-    })
-    const importFileInputRef = useRef<HTMLInputElement | null>(null)
-    const [pendingImportType, setPendingImportType] = useState<'json' | 'xml' | 'pdf' | null>(null)
-    const [importAccept, setImportAccept] = useState('')
-    const [isImporting, setIsImporting] = useState(false)
-    const [isDownloading, setIsDownloading] = useState(false)
+    });
+    const importFileInputRef = useRef<HTMLInputElement | null>(null);
+    const [pendingImportType, setPendingImportType] = useState<'json' | 'xml' | 'pdf' | null>(null);
+    const [importAccept, setImportAccept] = useState('');
+    const [isImporting, setIsImporting] = useState(false);
+    const [isDownloading, setIsDownloading] = useState(false);
     const [infoDialogState, setInfoDialogState] = useState<InfoDialogState>({
         open: false,
         title: 'Coming soon',
         description: 'This feature is under construction. Check back again shortly.',
         primaryLabel: 'Close',
         isLoading: false,
-    })
+    });
+
     useEffect(() => {
         const tenantName = user?.tenant?.name
         if (!isAuthenticated || !tenantName) {
@@ -245,11 +252,7 @@ export const AppLayout = ({children}: AppLayoutProps) => {
             return
         }
         void dispatch(fetchDirectoryTree(tenantName));
-    }, [dispatch, directoryLoading, isAuthenticated, lastFetchedTenant, user?.tenant?.name])
-
-    useEffect(() => {
-        setSelectedFiles([])
-    }, [currentDirectory?.id])
+    }, [dispatch, directoryLoading, isAuthenticated, lastFetchedTenant, user?.tenant?.name]);
 
     useEffect(() => {
         if (typeof window === 'undefined') {
@@ -278,22 +281,51 @@ export const AppLayout = ({children}: AppLayoutProps) => {
         }
     }, [])
 
-    const isOverlayNav = viewportWidth < BREAKPOINTS.TABLET
-    const navWidth = isOverlayNav ? 0 : getNavMenuWidth(isNavMenuCollapsed)
+    const isOverlayNav = viewportWidth < BREAKPOINTS.TABLET;
+
+    const navWidth = isOverlayNav ? 0 : getNavMenuWidth(isNavMenuCollapsed);
+
     const mainContainerStyle: CSSProperties = {
         gridTemplateColumns: isOverlayNav ? '1fr' : `${navWidth}px 1fr`,
-    }
+    };
+
+    const loadFileDetails = useCallback(async (tenantName: string, resourceId: string) => {
+        setDetailsState(prev => ({...prev, isLoading: true, error: null}))
+        try {
+            const {data} = await customAxios.get<ContentItemDetails>(`/v1/${tenantName}/${encodeURIComponent(resourceId)}/details`)
+            setDetailsState(prev => ({...prev, isLoading: false, data}))
+        } catch (error) {
+            let message = 'Failed to load file details'
+            if (error instanceof Error) {
+                message = error.message
+            }
+            setDetailsState(prev => ({...prev, isLoading: false, error: message}))
+        }
+    }, []);
+
+    const effectiveDirectory = useMemo(() => currentDirectory ?? rootDirectory ?? null, [currentDirectory, rootDirectory]);
+
+    const parentPathSegments = useMemo(
+        () => findDirectoryPathSegments(rootDirectory, effectiveDirectory?.id ?? null),
+        [rootDirectory, effectiveDirectory?.id],
+    );
+
+    const parentPathDisplay = useMemo(() => buildPathString(parentPathSegments), [parentPathSegments]);
+
+    const proposedDirectoryPath = useMemo(
+        () => appendPathSegment(parentPathDisplay, createDirectoryState.name.trim() || '(directory-name)'),
+        [parentPathDisplay, createDirectoryState.name],
+    );
 
     const handleItemSelect = (item: DirectoryNode) => {
-        dispatch(setCurrentDirectory(item.id));
-        setSelectedFiles([]); // Clear file selection when switching directories
+        dispatch(setCurrentDirectory(item.id))
         if (isOverlayNav) {
-            setIsNavMenuCollapsed(true);
+            setIsNavMenuCollapsed(true)
         }
     }
 
     const handleFileSelect = (fileIds: string[]) => {
-        setSelectedFiles(fileIds)
+        dispatch(setSelectedFiles(fileIds))
     }
 
     const handleNewDirectory = () => {
@@ -302,7 +334,7 @@ export const AppLayout = ({children}: AppLayoutProps) => {
             name: '',
             isSubmitting: false,
             error: null,
-        })
+        });
     }
 
     const handleImportContent = (type: 'json' | 'xml' | 'pdf') => {
@@ -504,31 +536,6 @@ export const AppLayout = ({children}: AppLayoutProps) => {
             successMessage: null,
         })
     }
-
-    const loadFileDetails = useCallback(async (tenantName: string, resourceId: string) => {
-        setDetailsState(prev => ({...prev, isLoading: true, error: null}))
-        try {
-            const {data} = await customAxios.get<ContentItemDetails>(`/v1/${tenantName}/${encodeURIComponent(resourceId)}/details`)
-            setDetailsState(prev => ({...prev, isLoading: false, data}))
-        } catch (error) {
-            let message = 'Failed to load file details'
-            if (error instanceof Error) {
-                message = error.message
-            }
-            setDetailsState(prev => ({...prev, isLoading: false, error: message}))
-        }
-    }, [])
-
-    const effectiveDirectory = useMemo(() => currentDirectory ?? rootDirectory ?? null, [currentDirectory, rootDirectory])
-    const parentPathSegments = useMemo(
-        () => findDirectoryPathSegments(rootDirectory, effectiveDirectory?.id ?? null),
-        [rootDirectory, effectiveDirectory?.id],
-    )
-    const parentPathDisplay = useMemo(() => buildPathString(parentPathSegments), [parentPathSegments])
-    const proposedDirectoryPath = useMemo(
-        () => appendPathSegment(parentPathDisplay, createDirectoryState.name.trim() || '(directory-name)'),
-        [parentPathDisplay, createDirectoryState.name],
-    )
 
     const handleSeeDetails = () => {
         const tenantName = user?.tenant?.name
@@ -926,7 +933,7 @@ export const AppLayout = ({children}: AppLayoutProps) => {
                 successMessage: `${removedCount} file${removedCount === 1 ? '' : 's'} successfully removed.`,
             })
 
-            setSelectedFiles([])
+            dispatch(setSelectedFiles([]))
 
             if (rootDirectory?.id) {
                 dispatch(setCurrentDirectory(rootDirectory.id))
@@ -1012,6 +1019,38 @@ export const AppLayout = ({children}: AppLayoutProps) => {
         setIsNavMenuCollapsed(prev => !prev)
     }
 
+    const handleToggleFavorite = useCallback(() => {
+        if (selectedFiles.length !== 1 || isAddingFavorite) {
+            return
+        }
+
+        const contentId = selectedFiles[0]
+        const selectedItemName = effectiveDirectory?.contentItems
+            .find(item => item.id === contentId)?.resource ?? 'Selected item'
+
+        dispatch(addFavorite(contentId))
+            .unwrap()
+            .then(() => {
+                setInfoDialogState({
+                    open: true,
+                    title: 'Favorite added',
+                    description: `"${selectedItemName}" is now available in your favorites.`,
+                    primaryLabel: 'Close',
+                    isLoading: false,
+                })
+            })
+            .catch((errorMessage: string | undefined) => {
+                const message = errorMessage ?? 'Failed to add this item to favorites. Please try again.'
+                setInfoDialogState({
+                    open: true,
+                    title: 'Unable to add favorite',
+                    description: message,
+                    primaryLabel: 'Close',
+                    isLoading: false,
+                })
+            })
+    }, [dispatch, effectiveDirectory, isAddingFavorite, selectedFiles])
+
     return (
         <div className={styles.appContainer}>
             {/* Header spans full width */}
@@ -1045,6 +1084,9 @@ export const AppLayout = ({children}: AppLayoutProps) => {
                     <div className={styles.actionBarWrapper}>
                         <ActionBar
                             hasSelection={selectedFiles.length > 0}
+                            selectedFilesCount={selectedFiles.length}
+                            onToggleFavorite={handleToggleFavorite}
+                            isFavoriteInProgress={isAddingFavorite}
                             onNewDirectory={handleNewDirectory}
                             disableNewDirectory={!effectiveDirectory || !user?.tenant?.name}
                             onImportContent={handleImportContent}

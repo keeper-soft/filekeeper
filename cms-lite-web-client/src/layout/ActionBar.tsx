@@ -1,154 +1,170 @@
 import {
-  Button,
-  Menu,
-  MenuTrigger,
-  MenuPopover,
-  MenuList,
-  MenuItem,
-  makeStyles,
-  tokens,
+    Button,
+    Menu,
+    MenuTrigger,
+    MenuPopover,
+    MenuList,
+    MenuItem,
+    makeStyles,
+    tokens,
 } from '@fluentui/react-components'
 import {
-  FolderAddRegular,
-  ArrowImportRegular,
-  DeleteRegular,
-  EyeRegular,
-  ArrowSyncRegular,
-  ArrowDownloadRegular,
+    FolderAddRegular,
+    ArrowImportRegular,
+    DeleteRegular,
+    EyeRegular,
+    ArrowSyncRegular,
+    ArrowDownloadRegular,
+    StarRegular,
 } from '@fluentui/react-icons'
-import { ACTION_BAR, BREAKPOINTS } from './layoutConstants'
+import {ACTION_BAR, BREAKPOINTS} from './layoutConstants'
 
 const useStyles = makeStyles({
-  actionBar: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: tokens.spacingHorizontalM,
-    padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorNeutralBackground2,
-    borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
-    minHeight: `${ACTION_BAR.HEIGHT}px`,
-    width: '100%',
-    zIndex: ACTION_BAR.Z_INDEX,
-    boxSizing: 'border-box',
-    flexWrap: 'wrap',
-    rowGap: tokens.spacingVerticalS,
-    [`@media (max-width: ${BREAKPOINTS.TABLET}px)`]: {
-      justifyContent: 'center',
-      gap: tokens.spacingHorizontalS,
+    actionBar: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: tokens.spacingHorizontalM,
+        padding: tokens.spacingVerticalM,
+        backgroundColor: tokens.colorNeutralBackground2,
+        borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
+        minHeight: `${ACTION_BAR.HEIGHT}px`,
+        width: '100%',
+        zIndex: ACTION_BAR.Z_INDEX,
+        boxSizing: 'border-box',
+        flexWrap: 'wrap',
+        rowGap: tokens.spacingVerticalS,
+        [`@media (max-width: ${BREAKPOINTS.TABLET}px)`]: {
+            justifyContent: 'center',
+            gap: tokens.spacingHorizontalS,
+        },
     },
-  },
-  buttonGroup: {
-    display: 'flex',
-    gap: tokens.spacingHorizontalS,
-    flexWrap: 'wrap',
-    [`@media (max-width: ${BREAKPOINTS.TABLET}px)`]: {
-      width: '100%',
-      justifyContent: 'center',
+    buttonGroup: {
+        display: 'flex',
+        gap: tokens.spacingHorizontalS,
+        flexWrap: 'wrap',
+        [`@media (max-width: ${BREAKPOINTS.TABLET}px)`]: {
+            width: '100%',
+            justifyContent: 'center',
+        },
+        [`@media (max-width: ${BREAKPOINTS.MOBILE}px)`]: {
+            flexDirection: 'column',
+            alignItems: 'stretch',
+            gap: tokens.spacingVerticalS,
+        },
     },
-    [`@media (max-width: ${BREAKPOINTS.MOBILE}px)`]: {
-      flexDirection: 'column',
-      alignItems: 'stretch',
-      gap: tokens.spacingVerticalS,
-    },
-  },
 })
 
 type ImportContentType = 'json' | 'xml' | 'pdf'
 
 interface ActionBarProps {
-  hasSelection: boolean
-  onNewDirectory?: () => void
-  disableNewDirectory?: boolean
-  onImportContent?: (type: ImportContentType) => void
-  onCreateContent?: (type: 'json' | 'xml') => void
-  disableImportContent?: boolean
-  disableCreateContent?: boolean
-  onDeleteContent?: () => void
-  onSeeDetails?: () => void
-  onRefresh?: () => void
-  canDownload?: boolean
-  onDownloadContent?: () => void
+    hasSelection: boolean
+    selectedFilesCount?: number
+    onNewDirectory?: () => void
+    disableNewDirectory?: boolean
+    onImportContent?: (type: ImportContentType) => void
+    onCreateContent?: (type: 'json' | 'xml') => void
+    disableImportContent?: boolean
+    disableCreateContent?: boolean
+    onDeleteContent?: () => void
+    onSeeDetails?: () => void
+    onRefresh?: () => void
+    canDownload?: boolean
+    onDownloadContent?: () => void
+    onToggleFavorite?: () => void
+    isFavoriteInProgress?: boolean
 }
 
 export const ActionBar = ({
-  hasSelection,
-  onNewDirectory,
-  disableNewDirectory,
-  onImportContent,
-  disableImportContent,
-  onDeleteContent,
-  onSeeDetails,
-  onRefresh,
-  canDownload,
-  onDownloadContent,
-}: ActionBarProps) => {
-  const styles = useStyles()
+                              hasSelection,
+                              selectedFilesCount = 0,
+                              onNewDirectory,
+                              disableNewDirectory,
+                              onImportContent,
+                              disableImportContent,
+                              onDeleteContent,
+                              onSeeDetails,
+                              onRefresh,
+                              canDownload,
+                              onDownloadContent,
+                              onToggleFavorite,
+                              isFavoriteInProgress = false,
+                          }: ActionBarProps) => {
+    const styles = useStyles();
 
-  return (
-    <div className={styles.actionBar}>
-      <div className={styles.buttonGroup}>
-        <Button
-          icon={<FolderAddRegular />}
-          appearance="primary"
-          onClick={onNewDirectory}
-          disabled={disableNewDirectory}
-        >
-          New Directory
-        </Button>
+    const favoriteDisabled = !(selectedFilesCount === 1) || isFavoriteInProgress
 
-        <Menu>
-          <MenuTrigger disableButtonEnhancement>
-            <Button
-              appearance="primary"
-              icon={<ArrowImportRegular />}
-              disabled={disableImportContent}
-            >
-              Import
-            </Button>
-          </MenuTrigger>
-          <MenuPopover>
-            <MenuList>
-              <MenuItem onClick={() => onImportContent?.('json')}>JSON</MenuItem>
-              <MenuItem onClick={() => onImportContent?.('xml')}>XML</MenuItem>
-              <MenuItem onClick={() => onImportContent?.('pdf')}>PDF</MenuItem>
-            </MenuList>
-          </MenuPopover>
-        </Menu>
+    return (
+        <div className={styles.actionBar}>
+            <div className={styles.buttonGroup}>
+                <Button
+                    icon={<FolderAddRegular/>}
+                    appearance="primary"
+                    onClick={onNewDirectory}
+                    disabled={disableNewDirectory}
+                >
+                    New Directory
+                </Button>
 
-        <Button
-          icon={<ArrowSyncRegular />}
-          onClick={onRefresh}
-        >
-          Refresh
-        </Button>
-      </div>
+                <Menu>
+                    <MenuTrigger disableButtonEnhancement>
+                        <Button
+                            appearance="primary"
+                            icon={<ArrowImportRegular/>}
+                            disabled={disableImportContent}
+                        >
+                            Import
+                        </Button>
+                    </MenuTrigger>
+                    <MenuPopover>
+                        <MenuList>
+                            <MenuItem onClick={() => onImportContent?.('json')}>JSON</MenuItem>
+                            <MenuItem onClick={() => onImportContent?.('xml')}>XML</MenuItem>
+                            <MenuItem onClick={() => onImportContent?.('pdf')}>PDF</MenuItem>
+                        </MenuList>
+                    </MenuPopover>
+                </Menu>
 
-      <div className={styles.buttonGroup}>
-        <Button
-          icon={<ArrowDownloadRegular />}
-          disabled={!canDownload}
-          onClick={onDownloadContent}
-        >
-          Download
-        </Button>
+                <Button
+                    icon={<ArrowSyncRegular/>}
+                    onClick={onRefresh}
+                >
+                    Refresh
+                </Button>
+            </div>
 
-        <Button
-          icon={<EyeRegular />}
-          disabled={!hasSelection}
-          onClick={onSeeDetails}
-        >
-          See Details
-        </Button>
+            <div className={styles.buttonGroup}>
+                {/* Favorite icon-only button: enabled only when exactly one file selected */}
+                <Button
+                    icon={<StarRegular/>}
+                    appearance={favoriteDisabled ? undefined : 'primary'}
+                    disabled={favoriteDisabled}
+                    onClick={onToggleFavorite}
+                />
+                <Button
+                    icon={<ArrowDownloadRegular/>}
+                    disabled={!canDownload}
+                    onClick={onDownloadContent}
+                >
+                    Download
+                </Button>
 
-        <Button
-          icon={<DeleteRegular />}
-          disabled={!hasSelection}
-          onClick={onDeleteContent}
-        >
-          Delete
-        </Button>
-      </div>
-    </div>
-  )
+                <Button
+                    icon={<EyeRegular/>}
+                    disabled={!hasSelection}
+                    onClick={onSeeDetails}
+                >
+                    See Details
+                </Button>
+
+                <Button
+                    icon={<DeleteRegular/>}
+                    disabled={!hasSelection}
+                    onClick={onDeleteContent}
+                >
+                    Delete
+                </Button>
+            </div>
+        </div>
+    )
 }

@@ -19,5 +19,6 @@ public static class CmsRepositoriesRegistration
         builder.Services.AddScoped<ITenantRepo, TenantRepo>();
         builder.Services.AddScoped<IDirectoryRepo, DirectoryRepo>();
         builder.Services.AddScoped<IContentItemRepo, ContentItemRepo>();
+        builder.Services.AddScoped<IFavoriteRepo, FavoriteRepo>();
     }
 }

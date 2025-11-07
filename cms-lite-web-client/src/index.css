@@ -8,6 +8,17 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* App-wide CSS variables (shared values) */
+  --app-spacing-sm: 8px;
+  --app-spacing-md: 12px;
+  --app-spacing-lg: 20px;
+  --app-spacing-xl: 32px;
+  --app-padding-bottom: 24px; /* common shared padding-bottom */
+  --app-max-height: 720px; /* example max height */
+  /* header specific */
+  --app-header-bg: rgba(255, 255, 255, 0.72); /* semi-transparent header bg */
+  --app-header-backdrop-filter: blur(6px);
+--app
 }
 
 html, body {

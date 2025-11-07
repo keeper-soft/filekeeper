@@ -11,5 +11,6 @@ public interface IContentItemRepo
     Task<List<DbSet.ContentItem>> GetContentItemsByDirectoryIdAsync(string directoryId);
     Task<List<DbSet.ContentItem>> GetContentItemsByTenantIdAsync(string tenantId);
     Task<DbSet.ContentItem?> GetContentItemByTenantAndResourceAsync(string tenantId, string resource);
-    Task<ContentDetailsResponse?> GetContentItemDetailsAsync(string tenantId, string resource);
+    Task<ContentDetailsResponse?> GetContentItemDetailsAsync(string tenantId, string resource, CancellationToken cancellationToken);
+    Task<int?> GetContentItemIdByDirectoryAndResourceAsync(string directoryId, string resource, CancellationToken cancellationToken);
 }
