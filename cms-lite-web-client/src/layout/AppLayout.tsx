@@ -189,54 +189,55 @@ const delay = (ms: number) => new Promise<void>((resolve) => {
     setTimeout(resolve, ms)
 });
 export const AppLayout = ({children}: AppLayoutProps) => {
-    const styles = useStyles()
-    const dispatch = useDispatch<AppDispatch>()
-    const navigate = useNavigate()
-    const {user, isAuthenticated} = useAuth()
-    const rootDirectory = useSelector(selectDirectoryTreeRoot)
-    const directoryLoading = useSelector(selectDirectoryTreeLoading)
-    const directoryError = useSelector(selectDirectoryTreeError)
-    const currentDirectory = useSelector(selectDirectoryTreeCurrentDirectory)
-    const lastFetchedTenant = useSelector(selectDirectoryTreeLastFetchedTenant)
-    const selectedFiles = useSelector(selectDirectoryTreeSelectedFileIds)
+    const styles = useStyles();
+    const dispatch = useDispatch<AppDispatch>();
+    const navigate = useNavigate();
+    const {user, isAuthenticated} = useAuth();
+    const rootDirectory = useSelector(selectDirectoryTreeRoot);
+    const directoryLoading = useSelector(selectDirectoryTreeLoading);
+    const directoryError = useSelector(selectDirectoryTreeError);
+    const currentDirectory = useSelector(selectDirectoryTreeCurrentDirectory);
+    const lastFetchedTenant = useSelector(selectDirectoryTreeLastFetchedTenant);
+    const selectedFiles = useSelector(selectDirectoryTreeSelectedFileIds);
     const [viewportWidth, setViewportWidth] = useState(() =>
         typeof window === 'undefined' ? BREAKPOINTS.DESKTOP : window.innerWidth,
-    )
+    );
     const [isNavMenuCollapsed, setIsNavMenuCollapsed] = useState<boolean>(() =>
         typeof window === 'undefined' ? false : window.innerWidth < BREAKPOINTS.TABLET,
-    )
+    );
     const [detailsState, setDetailsState] = useState<FileDetailsState>({
         open: false,
         isLoading: false,
         error: null,
         data: null,
         resourceId: null,
-    })
+    });
     const [createDirectoryState, setCreateDirectoryState] = useState<CreateDirectoryState>({
         open: false,
         name: '',
         isSubmitting: false,
         error: null,
-    })
+    });
     const [softDeleteState, setSoftDeleteState] = useState<SoftDeleteState>({
         open: false,
         items: [],
         isSubmitting: false,
         error: null,
         successMessage: null,
-    })
-    const importFileInputRef = useRef<HTMLInputElement | null>(null)
-    const [pendingImportType, setPendingImportType] = useState<'json' | 'xml' | 'pdf' | null>(null)
-    const [importAccept, setImportAccept] = useState('')
-    const [isImporting, setIsImporting] = useState(false)
-    const [isDownloading, setIsDownloading] = useState(false)
+    });
+    const importFileInputRef = useRef<HTMLInputElement | null>(null);
+    const [pendingImportType, setPendingImportType] = useState<'json' | 'xml' | 'pdf' | null>(null);
+    const [importAccept, setImportAccept] = useState('');
+    const [isImporting, setIsImporting] = useState(false);
+    const [isDownloading, setIsDownloading] = useState(false);
     const [infoDialogState, setInfoDialogState] = useState<InfoDialogState>({
         open: false,
         title: 'Coming soon',
         description: 'This feature is under construction. Check back again shortly.',
         primaryLabel: 'Close',
         isLoading: false,
-    })
+    });
+
     useEffect(() => {
         const tenantName = user?.tenant?.name
         if (!isAuthenticated || !tenantName) {
@@ -247,7 +248,7 @@ export const AppLayout = ({children}: AppLayoutProps) => {
             return
         }
         void dispatch(fetchDirectoryTree(tenantName));
-    }, [dispatch, directoryLoading, isAuthenticated, lastFetchedTenant, user?.tenant?.name])
+    }, [dispatch, directoryLoading, isAuthenticated, lastFetchedTenant, user?.tenant?.name]);
 
     useEffect(() => {
         if (typeof window === 'undefined') {
@@ -276,11 +277,40 @@ export const AppLayout = ({children}: AppLayoutProps) => {
         }
     }, [])
 
-    const isOverlayNav = viewportWidth < BREAKPOINTS.TABLET
-    const navWidth = isOverlayNav ? 0 : getNavMenuWidth(isNavMenuCollapsed)
+    const isOverlayNav = viewportWidth < BREAKPOINTS.TABLET;
+
+    const navWidth = isOverlayNav ? 0 : getNavMenuWidth(isNavMenuCollapsed);
+
     const mainContainerStyle: CSSProperties = {
         gridTemplateColumns: isOverlayNav ? '1fr' : `${navWidth}px 1fr`,
-    }
+    };
+
+    const loadFileDetails = useCallback(async (tenantName: string, resourceId: string) => {
+        setDetailsState(prev => ({...prev, isLoading: true, error: null}))
+        try {
+            const {data} = await customAxios.get<ContentItemDetails>(`/v1/${tenantName}/${encodeURIComponent(resourceId)}/details`)
+            setDetailsState(prev => ({...prev, isLoading: false, data}))
+        } catch (error) {
+            let message = 'Failed to load file details'
+            if (error instanceof Error) {
+                message = error.message
+            }
+            setDetailsState(prev => ({...prev, isLoading: false, error: message}))
+        }
+    }, []);
+
+    const effectiveDirectory = useMemo(() => currentDirectory ?? rootDirectory ?? null, [currentDirectory, rootDirectory]);
+
+    const parentPathSegments = useMemo(
+        () => findDirectoryPathSegments(rootDirectory, effectiveDirectory?.id ?? null),
+        [rootDirectory, effectiveDirectory?.id],
+    );
+    const parentPathDisplay = useMemo(() => buildPathString(parentPathSegments), [parentPathSegments]);
+
+    const proposedDirectoryPath = useMemo(
+        () => appendPathSegment(parentPathDisplay, createDirectoryState.name.trim() || '(directory-name)'),
+        [parentPathDisplay, createDirectoryState.name],
+    );
 
     const handleItemSelect = (item: DirectoryNode) => {
         dispatch(setCurrentDirectory(item.id))
@@ -299,7 +329,7 @@ export const AppLayout = ({children}: AppLayoutProps) => {
             name: '',
             isSubmitting: false,
             error: null,
-        })
+        });
     }
 
     const handleImportContent = (type: 'json' | 'xml' | 'pdf') => {
@@ -501,31 +531,6 @@ export const AppLayout = ({children}: AppLayoutProps) => {
             successMessage: null,
         })
     }
-
-    const loadFileDetails = useCallback(async (tenantName: string, resourceId: string) => {
-        setDetailsState(prev => ({...prev, isLoading: true, error: null}))
-        try {
-            const {data} = await customAxios.get<ContentItemDetails>(`/v1/${tenantName}/${encodeURIComponent(resourceId)}/details`)
-            setDetailsState(prev => ({...prev, isLoading: false, data}))
-        } catch (error) {
-            let message = 'Failed to load file details'
-            if (error instanceof Error) {
-                message = error.message
-            }
-            setDetailsState(prev => ({...prev, isLoading: false, error: message}))
-        }
-    }, [])
-
-    const effectiveDirectory = useMemo(() => currentDirectory ?? rootDirectory ?? null, [currentDirectory, rootDirectory])
-    const parentPathSegments = useMemo(
-        () => findDirectoryPathSegments(rootDirectory, effectiveDirectory?.id ?? null),
-        [rootDirectory, effectiveDirectory?.id],
-    )
-    const parentPathDisplay = useMemo(() => buildPathString(parentPathSegments), [parentPathSegments])
-    const proposedDirectoryPath = useMemo(
-        () => appendPathSegment(parentPathDisplay, createDirectoryState.name.trim() || '(directory-name)'),
-        [parentPathDisplay, createDirectoryState.name],
-    )
 
     const handleSeeDetails = () => {
         const tenantName = user?.tenant?.name

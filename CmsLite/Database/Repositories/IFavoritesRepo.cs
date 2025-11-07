@@ -7,6 +7,7 @@ public interface IFavoriteRepo
     Task<DbSet.ContentItem?> GetFavoriteByIdAsync(string favoriteId, CancellationToken cancellationToken);
     Task AddFavoriteAsync(int contentItemId, string userId, CancellationToken cancellationToken);
     Task RemoveFavoriteAsync(string favoriteId, CancellationToken cancellationToken);
+    Task RemoveFavoriteByContentItemIdAsync(int contentItemId, string userId, CancellationToken cancellationToken);
     Task<List<DbSet.ContentItem>> GetFavoritesByUserIdAsync(string userId, CancellationToken cancellationToken);
     Task<bool> FavoriteExistsAsync(int contentItemId, string userId, CancellationToken cancellationToken);
 
@@ -23,5 +24,5 @@ public interface IFavoriteRepo
         string resourceName,
         string userId,
         CancellationToken cancellationToken);
-        
+
 }

@@ -202,4 +202,16 @@ public class Utilities
         var ext = contentType.ToString().ToLower();
         return $"{tenant}/{resource}_v{version}.{ext}";
     }
+
+    public static string ExtractDirectoryIdFromContentId(string contentId)
+    {
+        var parts = contentId.Split(':');
+        return parts.Length == 2 ? parts[0] : string.Empty;
+    }
+
+    public static string ExtractResourceNameFromContentId(string contentId)
+    {
+        var parts = contentId.Split(':');
+        return parts.Length == 2 ? parts[1] : string.Empty;
+    }
 }

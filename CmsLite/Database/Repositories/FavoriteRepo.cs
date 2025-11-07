@@ -62,6 +62,17 @@ public class FavoriteRepo : IFavoriteRepo
         }
     }
 
+    public async Task RemoveFavoriteByContentItemIdAsync(int contentItemId, string userId, CancellationToken cancellationToken)
+    {
+        var favorite = await dbContext.FavoritesTable
+            .FirstOrDefaultAsync(f => f.ContentItemId == contentItemId && f.UserId == userId, cancellationToken);
+        if (favorite != null)
+        {
+            dbContext.FavoritesTable.Remove(favorite);
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+    }
+
     public async Task<bool> FavoriteExistsAsync(int contentItemId, string userId, CancellationToken cancellationToken)
     {
         return await dbContext.FavoritesTable.AnyAsync(f => f.ContentItemId == contentItemId && f.UserId == userId, cancellationToken);
@@ -71,6 +82,6 @@ public class FavoriteRepo : IFavoriteRepo
     {
         return await dbContext.FavoritesTable
             .Include(f => f.ContentItem)
-            .AnyAsync(f => f.ContentItem.DirectoryId == directoryId && f.ContentItem.Resource.Equals(resourceName, StringComparison.InvariantCultureIgnoreCase) && f.UserId == userId, cancellationToken);
+            .AnyAsync(f => f.ContentItem.DirectoryId == directoryId && f.ContentItem.Resource == resourceName && f.UserId == userId, cancellationToken);
     }
 }
