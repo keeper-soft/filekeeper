@@ -29,3 +29,10 @@ export interface FileNodeV2 {
     createdAtUtc: string;
 }
 
+export type PdfViewerRouteState = {
+    resourceId?: string;
+    tenantName?: string;
+    version?: number;
+    viewer?: 'pdf';
+}
+

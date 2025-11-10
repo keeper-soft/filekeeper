@@ -1,6 +1,6 @@
-import { Dialog, DialogSurface, DialogBody, DialogTitle, DialogContent, DialogActions, Button, Text, Link, makeStyles, tokens, Spinner } from '@fluentui/react-components'
-import { formatFileDate } from '../utilities/file-formatters'
-import type { ContentItemDetails } from '../types/content'
+import { Dialog, DialogSurface, DialogBody, DialogTitle, DialogContent, DialogActions, Button, Text, Link, makeStyles, tokens, Spinner } from '@fluentui/react-components';
+import { formatFileDate } from '../utilities/file-formatters';
+import type { ContentItemDetails } from '../types/content';
 
 interface FileDetailsModalProps {
   open: boolean
@@ -12,6 +12,7 @@ interface FileDetailsModalProps {
   onRetry?: () => void
   onOpenJsonViewer?: (resourceId: string, details: ContentItemDetails | null) => void
   onOpenXmlViewer?: (resourceId: string, details: ContentItemDetails | null) => void
+  onOpenPdfViewer?: (resourceId: string, details: ContentItemDetails | null) => void
 }
 
 const useStyles = makeStyles({
@@ -77,8 +78,9 @@ export const FileDetailsModal = ({
   onRetry,
   onOpenJsonViewer,
   onOpenXmlViewer,
+  onOpenPdfViewer,
 }: FileDetailsModalProps) => {
-  const styles = useStyles()
+  const styles = useStyles();
 
   const name = details?.resource ?? resourceId ?? 'Unknown'
   const size = details?.size || "N/A";
@@ -103,6 +105,12 @@ export const FileDetailsModal = ({
       details &&
       (details.contentType?.toLowerCase().includes('xml') ||
         details.metadata?.fileExtension?.toLowerCase() === 'xml'),
+  )
+  const canOpenPdfViewer = Boolean(
+    resourceId &&
+      details &&
+      (details.contentType?.toLowerCase().includes('pdf') ||
+        details.metadata?.fileExtension?.toLowerCase() === 'pdf'),
   )
 
   return (
@@ -198,8 +206,8 @@ export const FileDetailsModal = ({
                 className={styles.actionLink}
                 href="#"
                 onClick={(event) => {
-                  event.preventDefault()
-                  onOpenJsonViewer(resourceId, details)
+                  event.preventDefault();
+                  onOpenJsonViewer(resourceId, details);
                 }}
               >
                 See in JSON viewer
@@ -210,11 +218,23 @@ export const FileDetailsModal = ({
                 className={styles.actionLink}
                 href="#"
                 onClick={(event) => {
-                  event.preventDefault()
-                  onOpenXmlViewer(resourceId, details)
+                  event.preventDefault();
+                  onOpenXmlViewer(resourceId, details);
                 }}
               >
                 See in XML viewer
+              </Link>
+            )}
+            {canOpenPdfViewer && onOpenPdfViewer && resourceId && (
+              <Link
+                className={styles.actionLink}
+                href="#"
+                onClick={(event) => {
+                  event.preventDefault();
+                  onOpenPdfViewer(resourceId, details);
+                }}
+              >
+                See in PDF viewer
               </Link>
             )}
             <Button appearance="primary" onClick={onClose} disabled={isLoading}>
@@ -224,7 +244,7 @@ export const FileDetailsModal = ({
         </DialogBody>
       </DialogSurface>
     </Dialog>
-  )
-}
+  );
+};
 
-export default FileDetailsModal
+export default FileDetailsModal;

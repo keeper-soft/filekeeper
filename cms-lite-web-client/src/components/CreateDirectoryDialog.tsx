@@ -1,4 +1,4 @@
-import type {FormEvent} from 'react'
+import type {FormEvent} from 'react';
 import {
     Dialog,
     DialogSurface,
@@ -14,7 +14,7 @@ import {
     makeStyles,
     tokens,
     MessageBar,
-} from '@fluentui/react-components'
+} from '@fluentui/react-components';
 
 const useStyles = makeStyles({
     form: {
@@ -35,17 +35,17 @@ const useStyles = makeStyles({
         justifyContent: 'center',
         padding: tokens.spacingVerticalS,
     },
-})
+});
 
 export interface CreateDirectoryDialogProps {
-    open: boolean
-    directoryName: string
-    parentPath: string
-    isSubmitting: boolean
-    errorMessage?: string | null
-    onNameChange: (value: string) => void
-    onCancel: () => void
-    onSubmit: () => void
+    open: boolean;
+    directoryName: string;
+    parentPath: string;
+    isSubmitting: boolean;
+    errorMessage?: string | null;
+    onNameChange: (value: string) => void;
+    onCancel: () => void;
+    onSubmit: () => void;
 }
 
 export const CreateDirectoryDialog = ({
@@ -58,18 +58,18 @@ export const CreateDirectoryDialog = ({
                                           onCancel,
                                           onSubmit,
                                       }: CreateDirectoryDialogProps) => {
-    const styles = useStyles()
+    const styles = useStyles();
 
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-        event.preventDefault()
+        event.preventDefault();
         if (!isSubmitting) {
-            onSubmit()
+            onSubmit();
         }
-    }
+    };
 
     return (
         <Dialog open={open} onOpenChange={(_, data) => {
-            if (!data.open) onCancel()
+            if (!data.open) onCancel();
         }}>
             <DialogSurface>
                 <DialogBody>
@@ -114,7 +114,7 @@ export const CreateDirectoryDialog = ({
                 </DialogBody>
             </DialogSurface>
         </Dialog>
-    )
-}
+    );
+};
 
-export default CreateDirectoryDialog
+export default CreateDirectoryDialog;

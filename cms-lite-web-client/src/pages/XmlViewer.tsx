@@ -7,9 +7,9 @@ import {
     type ChangeEvent,
     type CSSProperties,
     type SyntheticEvent,
-} from 'react'
-import {useLocation, useNavigate} from 'react-router-dom'
-import {useSelector} from 'react-redux'
+} from 'react';
+import {useLocation, useNavigate} from 'react-router-dom';
+import {useSelector} from 'react-redux';
 import {
     Button,
     Textarea,
@@ -32,20 +32,20 @@ import {
     Option,
     Label,
     Caption1,
-} from '@fluentui/react-components'
-import {ArrowLeftRegular, CheckmarkRegular, ArrowImportRegular} from '@fluentui/react-icons'
-import JsonView from '@uiw/react-json-view'
-import XMLReader from '@uiw/react-xml-reader'
-import {XMLBuilder, XMLParser} from 'fast-xml-parser'
-import {MainLayout} from '../layout'
-import type {ContentItemDetails} from '../types/content'
-import {useAuth} from '../contexts'
-import customAxios from '../utilities/custom-axios'
+} from '@fluentui/react-components';
+import {ArrowLeftRegular, CheckmarkRegular, ArrowImportRegular} from '@fluentui/react-icons';
+import JsonView from '@uiw/react-json-view';
+import XMLReader from '@uiw/react-xml-reader';
+import {XMLBuilder, XMLParser} from 'fast-xml-parser';
+import {MainLayout} from '../layout';
+import type {ContentItemDetails} from '../types/content';
+import {useAuth} from '../contexts';
+import customAxios from '../utilities/custom-axios';
 import {
     selectDirectoryTreeRoot,
     type ContentItemNode,
     type DirectoryNode,
-} from '../store/slices/directoryTree'
+} from '../store/slices/directoryTree';
 
 const SAMPLE_XML = `<?xml version="1.0" encoding="UTF-8"?>
 <contentItem>
@@ -65,14 +65,14 @@ const SAMPLE_XML = `<?xml version="1.0" encoding="UTF-8"?>
       <paragraph>Paste XML in the panel to inspect the structure.</paragraph>
     </section>
   </body>
-</contentItem>`
+</contentItem>`;
 
 const xmlParserOptions = {
     ignoreAttributes: false,
     attributeNamePrefix: '@_',
     textNodeName: '#text',
     trimValues: false,
-} as const
+} as const;
 
 const xmlBuilderOptions = {
     ignoreAttributes: false,
@@ -81,7 +81,7 @@ const xmlBuilderOptions = {
     suppressEmptyNode: true,
     format: true,
     indentBy: '  ',
-}
+};
 
 const useStyles = makeStyles({
     pageRoot: {
@@ -176,7 +176,7 @@ const useStyles = makeStyles({
         width: 0,
         height: 0,
     },
-})
+});
 
 const viewerTheme: Record<string, string> = {
     base00: tokens.colorNeutralBackground1,
@@ -192,7 +192,7 @@ const viewerTheme: Record<string, string> = {
     boolean: tokens.colorPaletteTealForeground2,
     null: tokens.colorPaletteMarigoldForeground2,
     backgroundColor: tokens.colorNeutralBackground1,
-}
+};
 
 type XmlViewerRouteState = {
     resourceId?: string
@@ -739,6 +739,6 @@ export const XmlViewer = () => {
             />
         </MainLayout>
     )
-}
+};
 
-export default XmlViewer
+export default XmlViewer;

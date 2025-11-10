@@ -61,4 +61,4 @@ export const NavSelector = (props: Partial<DropdownProps>): JSXElement => {
             </Dropdown>
         </div>
     );
-}
+};

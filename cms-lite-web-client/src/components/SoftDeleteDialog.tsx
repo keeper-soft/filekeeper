@@ -13,7 +13,7 @@ import {
     makeStyles,
     tokens,
     MessageBar,
-} from '@fluentui/react-components'
+} from '@fluentui/react-components';
 
 const useStyles = makeStyles({
     content: {
@@ -33,23 +33,23 @@ const useStyles = makeStyles({
     successRow: {
         marginTop: tokens.spacingVerticalS,
     },
-})
+});
 
 export interface SoftDeleteItem {
-    id: string
-    name: string
-    path: string
-    resource: string
+    id: string;
+    name: string;
+    path: string;
+    resource: string;
 }
 
 export interface SoftDeleteDialogProps {
-    open: boolean
-    items: SoftDeleteItem[]
-    isSubmitting: boolean
-    errorMessage?: string | null
-    successMessage?: string | null
-    onCancel: () => void
-    onConfirm: () => void
+    open: boolean;
+    items: SoftDeleteItem[];
+    isSubmitting: boolean;
+    errorMessage?: string | null;
+    successMessage?: string | null;
+    onCancel: () => void;
+    onConfirm: () => void;
 }
 
 export const SoftDeleteDialog = ({
@@ -61,7 +61,7 @@ export const SoftDeleteDialog = ({
                                      onCancel,
                                      onConfirm,
                                  }: SoftDeleteDialogProps) => {
-    const styles = useStyles()
+    const styles = useStyles();
 
     return (
         <Dialog
@@ -125,7 +125,7 @@ export const SoftDeleteDialog = ({
                 </DialogBody>
             </DialogSurface>
         </Dialog>
-    )
+    );
 }
 
-export default SoftDeleteDialog
+export default SoftDeleteDialog;

@@ -1,5 +1,5 @@
-import {useState} from 'react'
-import {Navigate} from 'react-router-dom'
+import {useState} from 'react';
+import {Navigate} from 'react-router-dom';
 import {
     makeStyles,
     shorthands,
@@ -16,9 +16,9 @@ import {
     MessageBarTitle,
     Spinner,
     mergeClasses,
-} from '@fluentui/react-components'
-import {PersonRegular, LockClosedRegular, EyeRegular, EyeOffRegular} from '@fluentui/react-icons'
-import {useAuth} from '../contexts'
+} from '@fluentui/react-components';
+import {PersonRegular, LockClosedRegular, EyeRegular, EyeOffRegular} from '@fluentui/react-icons';
+import {useAuth} from '../contexts';
 //import {FileKeeperIllustration} from '../components/icons/FileKeeperIllustration'
 import {FileKeeper} from "../components/icons/FileKeeper";
 import {GoogleIcon} from "../components/icons/GoogleIcon";
