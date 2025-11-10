@@ -1,5 +1,5 @@
 import { makeStyles, tokens, Button, Text } from '@fluentui/react-components';
-import { DeleteRegular } from '@fluentui/react-icons';
+import { DeleteRegular, EyeRegular } from '@fluentui/react-icons';
 
 const useStyles = makeStyles({
   container: {
@@ -21,11 +21,20 @@ interface FavoritesBarProps {
   selectedCount: number;
   onRemoveFavorites: () => void;
   isRemoving?: boolean;
+  onSeeDetails?: () => void;
+  seeDetailsDisabled?: boolean;
 }
 
-export const FavoritesBar = ({ selectedCount, onRemoveFavorites, isRemoving = false }: FavoritesBarProps) => {
+export const FavoritesBar = ({
+  selectedCount,
+  onRemoveFavorites,
+  isRemoving = false,
+  onSeeDetails,
+  seeDetailsDisabled,
+}: FavoritesBarProps) => {
   const styles = useStyles();
   const hasSelection = selectedCount > 0;
+  const detailsDisabled = seeDetailsDisabled ?? !hasSelection;
 
   return (
     <div className={styles.container}>
@@ -33,11 +42,20 @@ export const FavoritesBar = ({ selectedCount, onRemoveFavorites, isRemoving = fa
         {hasSelection ? `${selectedCount} item${selectedCount === 1 ? '' : 's'} selected` : 'Select an item to manage favorites'}
       </Text>
       <Button
+        appearance="secondary"
+        icon={<EyeRegular />}
+        disabled={detailsDisabled}
+        onClick={onSeeDetails}
+      >
+        See Details
+      </Button>
+      <Button
         appearance="primary"
         icon={<DeleteRegular />}
         disabled={!hasSelection || isRemoving}
         onClick={onRemoveFavorites}
       >
+        Remove
       </Button>
     </div>
   );

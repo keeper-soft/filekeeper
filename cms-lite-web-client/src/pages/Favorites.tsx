@@ -11,6 +11,7 @@ import {
 import { ArrowLeftRegular, StarRegular } from '@fluentui/react-icons';
 import { MainLayout } from '../layout';
 import { ContentArea } from '../layout';
+import { useAuth } from '../contexts';
 import {
   selectDirectoryTreeSelectedFileIds,
   setSelectedFiles,
@@ -27,6 +28,9 @@ import {
 } from '../store/slices/favorites';
 import { FavoritesBar } from '../components';
 import { InfoDialog } from '../components/modals/InfoDialog';
+import { FileDetailsModal } from '../components/FileDetailsModal';
+import type { ContentItemDetails } from '../types/content';
+import { useFileDetails } from '../hooks/useFileDetails';
 
 const useStyles = makeStyles({
   pageRoot: {
@@ -69,6 +73,7 @@ export const Favorites = () => {
   const styles = useStyles();
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
+  const { user } = useAuth();
   const [dialogState, setDialogState] = useState({
     open: false,
     title: '',
@@ -80,6 +85,13 @@ export const Favorites = () => {
   const isLoading = useSelector(selectFavoritesLoading);
   const error = useSelector(selectFavoritesError);
   const isRemoving = useSelector(selectFavoritesRemoving);
+  const tenantName = user?.tenant?.name ?? null;
+  const {
+    state: detailsState,
+    openDetails,
+    closeDetails,
+    retry,
+  } = useFileDetails({ tenantName });
 
   useEffect(() => {
     dispatch(setSelectedFiles([]));
@@ -138,6 +150,66 @@ export const Favorites = () => {
     void dispatch(fetchFavorites());
   }, [dispatch, isLoading]);
 
+  const handleSeeDetails = useCallback(() => {
+    if (selectedFileIds.length !== 1 || !tenantName) {
+      return;
+    }
+
+    const targetId = selectedFileIds[0];
+    const target = favorites.find((item) => item.id === targetId);
+    if (!target) {
+      return;
+    }
+
+    openDetails(target.resource);
+  }, [favorites, openDetails, selectedFileIds, tenantName]);
+
+  const buildViewerState = useCallback(
+    (resourceId: string, details: ContentItemDetails | null, viewer: 'json' | 'xml' | 'pdf') => ({
+      resourceId,
+      metadata: details,
+      tenantName,
+      contentType: details?.contentType,
+      fileExtension: details?.metadata?.fileExtension,
+      version: details?.latestVersion,
+      viewer,
+    }),
+    [tenantName],
+  );
+
+  const handleOpenJsonViewer = useCallback(
+    (resourceId: string, details: ContentItemDetails | null) => {
+      if (!resourceId) {
+        return;
+      }
+      closeDetails();
+      navigate('/tools/json-viewer', { state: buildViewerState(resourceId, details, 'json') });
+    },
+    [buildViewerState, closeDetails, navigate],
+  );
+
+  const handleOpenXmlViewer = useCallback(
+    (resourceId: string, details: ContentItemDetails | null) => {
+      if (!resourceId) {
+        return;
+      }
+      closeDetails();
+      navigate('/tools/xml-viewer', { state: buildViewerState(resourceId, details, 'xml') });
+    },
+    [buildViewerState, closeDetails, navigate],
+  );
+
+  const handleOpenPdfViewer = useCallback(
+    (resourceId: string, details: ContentItemDetails | null) => {
+      if (!resourceId) {
+        return;
+      }
+      closeDetails();
+      navigate('/tools/pdf-viewer', { state: buildViewerState(resourceId, details, 'pdf') });
+    },
+    [buildViewerState, closeDetails, navigate],
+  );
+
   return (
     <MainLayout variant="viewer">
       <div className={styles.pageRoot}>
@@ -157,6 +229,8 @@ export const Favorites = () => {
             selectedCount={selectedFileIds.length}
             onRemoveFavorites={handleRemoveFromFavorites}
             isRemoving={isRemoving}
+            onSeeDetails={handleSeeDetails}
+            seeDetailsDisabled={selectedFileIds.length !== 1}
           />
 
           <ContentArea
@@ -190,6 +264,18 @@ export const Favorites = () => {
         title={dialogState.title}
         description={dialogState.description}
         onDismiss={handleDismissDialog}
+      />
+      <FileDetailsModal
+        open={detailsState.open}
+        details={detailsState.data}
+        isLoading={detailsState.isLoading}
+        error={detailsState.error}
+        resourceId={detailsState.resourceId}
+        onClose={closeDetails}
+        onRetry={detailsState.error ? retry : undefined}
+        onOpenJsonViewer={handleOpenJsonViewer}
+        onOpenXmlViewer={handleOpenXmlViewer}
+        onOpenPdfViewer={handleOpenPdfViewer}
       />
     </MainLayout>
   );

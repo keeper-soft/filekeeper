@@ -26,6 +26,7 @@ import {
 } from '../store/slices/directoryTree'
 import {addFavorite, selectFavoritesAdding} from '../store/slices/favorites'
 import {FileDetailsModal} from '../components/FileDetailsModal'
+import {useFileDetails} from '../hooks/useFileDetails'
 import {CreateDirectoryDialog} from '../components/CreateDirectoryDialog'
 import {SoftDeleteDialog, type SoftDeleteItem} from '../components/SoftDeleteDialog'
 import {InfoDialog} from '../components/modals/InfoDialog'
@@ -88,14 +89,6 @@ const useStyles = makeStyles({
 
 interface AppLayoutProps {
     children?: ReactNode
-}
-
-interface FileDetailsState {
-    open: boolean
-    isLoading: boolean
-    error: string | null
-    data: ContentItemDetails | null
-    resourceId: string | null
 }
 
 interface CreateDirectoryState {
@@ -199,18 +192,10 @@ export const AppLayout = ({children}: AppLayoutProps) => {
     const lastFetchedTenant = useSelector(selectDirectoryTreeLastFetchedTenant);
     const selectedFiles = useSelector(selectDirectoryTreeSelectedFileIds);
     const isAddingFavorite = useSelector(selectFavoritesAdding)
-    const [viewportWidth, setViewportWidth] = useState(() =>
-        typeof window === 'undefined' ? BREAKPOINTS.DESKTOP : window.innerWidth,
-    );
-    const [isNavMenuCollapsed, setIsNavMenuCollapsed] = useState<boolean>(() =>
-        typeof window === 'undefined' ? false : window.innerWidth < BREAKPOINTS.TABLET,
-    );
-    const [detailsState, setDetailsState] = useState<FileDetailsState>({
-        open: false,
-        isLoading: false,
-        error: null,
-        data: null,
-        resourceId: null,
+    const [viewportWidth, setViewportWidth] = useState(() => typeof window === 'undefined' ? BREAKPOINTS.DESKTOP : window.innerWidth);
+    const [isNavMenuCollapsed, setIsNavMenuCollapsed] = useState<boolean>(() => typeof window === 'undefined' ? false : window.innerWidth < BREAKPOINTS.TABLET,);
+    const {state: detailsState, openDetails, closeDetails, retry} = useFileDetails({
+        tenantName: user?.tenant?.name ?? null,
     });
     const [createDirectoryState, setCreateDirectoryState] = useState<CreateDirectoryState>({
         open: false,
@@ -285,32 +270,14 @@ export const AppLayout = ({children}: AppLayoutProps) => {
         gridTemplateColumns: isOverlayNav ? '1fr' : `${navWidth}px 1fr`,
     };
 
-    const loadFileDetails = useCallback(async (tenantName: string, resourceId: string) => {
-        setDetailsState(prev => ({...prev, isLoading: true, error: null}))
-        try {
-            const {data} = await customAxios.get<ContentItemDetails>(`/v1/${tenantName}/${encodeURIComponent(resourceId)}/details`)
-            setDetailsState(prev => ({...prev, isLoading: false, data}))
-        } catch (error) {
-            let message = 'Failed to load file details'
-            if (error instanceof Error) {
-                message = error.message
-            }
-            setDetailsState(prev => ({...prev, isLoading: false, error: message}))
-        }
-    }, []);
-
     const effectiveDirectory = useMemo(() => currentDirectory ?? rootDirectory ?? null, [currentDirectory, rootDirectory]);
 
-    const parentPathSegments = useMemo(
-        () => findDirectoryPathSegments(rootDirectory, effectiveDirectory?.id ?? null),
-        [rootDirectory, effectiveDirectory?.id],
+    const parentPathSegments = useMemo(() => findDirectoryPathSegments(rootDirectory, effectiveDirectory?.id ?? null), [rootDirectory, effectiveDirectory?.id],
     );
 
     const parentPathDisplay = useMemo(() => buildPathString(parentPathSegments), [parentPathSegments]);
 
-    const proposedDirectoryPath = useMemo(
-        () => appendPathSegment(parentPathDisplay, createDirectoryState.name.trim() || '(directory-name)'),
-        [parentPathDisplay, createDirectoryState.name],
+    const proposedDirectoryPath = useMemo(() => appendPathSegment(parentPathDisplay, createDirectoryState.name.trim() || '(directory-name)'), [parentPathDisplay, createDirectoryState.name],
     );
 
     const handleItemSelect = (item: DirectoryNode) => {
@@ -534,8 +501,7 @@ export const AppLayout = ({children}: AppLayoutProps) => {
     }
 
     const handleSeeDetails = () => {
-        const tenantName = user?.tenant?.name
-        if (selectedFiles.length === 0 || !effectiveDirectory || !tenantName) {
+        if (selectedFiles.length === 0 || !effectiveDirectory || !user?.tenant?.name) {
             return
         }
 
@@ -545,28 +511,15 @@ export const AppLayout = ({children}: AppLayoutProps) => {
             return
         }
 
-        setDetailsState({
-            open: true,
-            isLoading: true,
-            error: null,
-            data: null,
-            resourceId: file.resource,
-        })
-
-        void loadFileDetails(tenantName, file.resource)
+        openDetails(file.resource)
     }
 
     const handleCloseDetails = () => {
-        setDetailsState(prev => ({...prev, open: false}))
+        closeDetails()
     }
 
     const handleRetryDetails = () => {
-        const tenantName = user?.tenant?.name
-        if (!detailsState.resourceId || !tenantName) {
-            return
-        }
-        setDetailsState(prev => ({...prev, isLoading: true, error: null}))
-        void loadFileDetails(tenantName, detailsState.resourceId)
+        retry()
     }
 
     const handleDirectoryNameChange = (value: string) => {
@@ -950,7 +903,7 @@ export const AppLayout = ({children}: AppLayoutProps) => {
 
         const tenantName = user?.tenant?.name
 
-        setDetailsState(prev => ({...prev, open: false}))
+        closeDetails()
         navigate('/tools/json-viewer', {
             state: {
                 resourceId,
@@ -971,7 +924,7 @@ export const AppLayout = ({children}: AppLayoutProps) => {
 
         const tenantName = user?.tenant?.name
 
-        setDetailsState(prev => ({ ...prev, open: false }))
+        closeDetails()
         navigate('/tools/xml-viewer', {
             state: {
                 resourceId,
@@ -992,7 +945,7 @@ export const AppLayout = ({children}: AppLayoutProps) => {
 
         const tenantName = user?.tenant?.name
 
-        setDetailsState(prev => ({ ...prev, open: false }))
+        closeDetails()
         navigate('/tools/pdf-viewer', {
             state: {
                 resourceId,
@@ -1167,5 +1120,3 @@ export const AppLayout = ({children}: AppLayoutProps) => {
         </div>
     )
 }
-
-// Context will be added later if needed for sharing state between components
