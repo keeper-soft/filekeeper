@@ -1,22 +1,22 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useDispatch, useSelector } from 'react-redux'
-import { useNavigate } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import {
   Button,
   makeStyles,
   tokens,
   Subtitle1,
   Text,
-} from '@fluentui/react-components'
-import { ArrowLeftRegular, StarRegular } from '@fluentui/react-icons'
-import { MainLayout } from '../layout'
-import { ContentArea } from '../layout'
+} from '@fluentui/react-components';
+import { ArrowLeftRegular, StarRegular } from '@fluentui/react-icons';
+import { MainLayout } from '../layout';
+import { ContentArea } from '../layout';
 import {
   selectDirectoryTreeSelectedFileIds,
   setSelectedFiles,
   type DirectoryNode,
-} from '../store/slices/directoryTree'
-import type { AppDispatch } from '../store/store'
+} from '../store/slices/directoryTree';
+import type { AppDispatch } from '../store/store';
 import {
   fetchFavorites,
   removeFavorites,
@@ -24,9 +24,9 @@ import {
   selectFavoritesItems,
   selectFavoritesLoading,
   selectFavoritesRemoving,
-} from '../store/slices/favorites'
-import { FavoritesBar } from '../components'
-import { InfoDialog } from '../components/modals/InfoDialog'
+} from '../store/slices/favorites';
+import { FavoritesBar } from '../components';
+import { InfoDialog } from '../components/modals/InfoDialog';
 
 const useStyles = makeStyles({
   pageRoot: {
@@ -63,73 +63,80 @@ const useStyles = makeStyles({
     display: 'flex',
     justifyContent: 'flex-end',
   },
-})
+});
 
 export const Favorites = () => {
-  const styles = useStyles()
-  const navigate = useNavigate()
-  const dispatch = useDispatch<AppDispatch>()
+  const styles = useStyles();
+  const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
   const [dialogState, setDialogState] = useState({
     open: false,
     title: '',
     description: '',
-  })
+  });
 
-  const selectedFileIds = useSelector(selectDirectoryTreeSelectedFileIds)
-  const favorites = useSelector(selectFavoritesItems)
-  const isLoading = useSelector(selectFavoritesLoading)
-  const error = useSelector(selectFavoritesError)
-  const isRemoving = useSelector(selectFavoritesRemoving)
+  const selectedFileIds = useSelector(selectDirectoryTreeSelectedFileIds);
+  const favorites = useSelector(selectFavoritesItems);
+  const isLoading = useSelector(selectFavoritesLoading);
+  const error = useSelector(selectFavoritesError);
+  const isRemoving = useSelector(selectFavoritesRemoving);
 
   useEffect(() => {
-    dispatch(setSelectedFiles([]))
-    void dispatch(fetchFavorites())
-  }, [dispatch])
+    dispatch(setSelectedFiles([]));
+    void dispatch(fetchFavorites());
+  }, [dispatch]);
 
-  const favoritesDirectory: DirectoryNode = useMemo(() => ({
-    id: 'favorites-root',
-    name: 'Favorites',
-    level: 0,
-    parentId: null,
-    subDirectories: [],
-    contentItems: favorites,
-  }), [favorites])
+  const favoritesDirectory: DirectoryNode = useMemo(
+    () => ({
+      id: 'favorites-root',
+      name: 'Favorites',
+      level: 0,
+      parentId: null,
+      subDirectories: [],
+      contentItems: favorites,
+    }),
+    [favorites]
+  );
 
   const handleRemoveFromFavorites = useCallback(() => {
     if (selectedFileIds.length === 0 || isRemoving) {
-      return
+      return;
     }
 
-    const count = selectedFileIds.length
+    const count = selectedFileIds.length;
     dispatch(removeFavorites(selectedFileIds))
       .unwrap()
       .then(() => {
         setDialogState({
           open: true,
           title: count === 1 ? 'Favorite removed' : 'Favorites removed',
-          description: `${count} item${count === 1 ? '' : 's'} removed from favorites.`,
-        })
-        dispatch(setSelectedFiles([]))
+          description: `${count} item${
+            count === 1 ? '' : 's'
+          } removed from favorites.`,
+        });
+        dispatch(setSelectedFiles([]));
       })
       .catch((errorMessage: string | undefined) => {
         setDialogState({
           open: true,
           title: 'Unable to remove favorites',
-          description: errorMessage ?? 'We could not remove those favorites. Please try again.',
-        })
-      })
-  }, [dispatch, isRemoving, selectedFileIds])
+          description:
+            errorMessage ??
+            'We could not remove those favorites. Please try again.',
+        });
+      });
+  }, [dispatch, isRemoving, selectedFileIds]);
 
   const handleDismissDialog = useCallback(() => {
-    setDialogState((prev) => ({ ...prev, open: false }))
-  }, [])
+    setDialogState((prev) => ({ ...prev, open: false }));
+  }, []);
 
   const handleRefresh = useCallback(() => {
     if (isLoading) {
-      return
+      return;
     }
-    void dispatch(fetchFavorites())
-  }, [dispatch, isLoading])
+    void dispatch(fetchFavorites());
+  }, [dispatch, isLoading]);
 
   return (
     <MainLayout variant="viewer">
@@ -142,9 +149,7 @@ export const Favorites = () => {
           >
             Back to Content Explorer
           </Button>
-          <Subtitle1>
-            Your favorites
-          </Subtitle1>
+          <Subtitle1>Your favorites</Subtitle1>
         </div>
 
         <div className={styles.section}>
@@ -187,5 +192,5 @@ export const Favorites = () => {
         onDismiss={handleDismissDialog}
       />
     </MainLayout>
-  )
-}
+  );
+};

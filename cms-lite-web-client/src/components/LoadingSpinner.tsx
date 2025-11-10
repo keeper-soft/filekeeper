@@ -1,4 +1,4 @@
-import { Spinner } from '@fluentui/react-components'
+import { Spinner } from '@fluentui/react-components';
 
 interface LoadingSpinnerProps {
   message?: string
@@ -18,4 +18,4 @@ export const LoadingSpinner = ({ message = 'Loading...' }: LoadingSpinnerProps) 
       <span>{message}</span>
     </div>
   )
-}
+};

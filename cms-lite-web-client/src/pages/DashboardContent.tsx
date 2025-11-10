@@ -1,17 +1,17 @@
-import { useSelector } from 'react-redux'
-import { 
+import { useSelector } from 'react-redux';
+import {
   makeStyles, 
   tokens, 
   Card, 
   CardPreview,
   Body1,
   Title2,
-} from '@fluentui/react-components'
-import type { RootState } from '../store/store'
+} from '@fluentui/react-components';
+import type { RootState } from '../store/store';
 import {
   selectDashboardStats,
   selectDashboardErrors,
-} from '../store/slices/dashboard'
+} from '../store/slices/dashboard';
 
 const useDashboardStyles = makeStyles({
   container: {
@@ -64,7 +64,7 @@ const useDashboardStyles = makeStyles({
     padding: tokens.spacingVerticalM,
     textAlign: 'center',
   },
-})
+});
 
 /**
  * Dashboard Content Component
@@ -73,12 +73,12 @@ const useDashboardStyles = makeStyles({
  * Shows stats, recent files, activities, and handles error states.
  */
 export const DashboardContent = () => {
-  const styles = useDashboardStyles()
-  
+  const styles = useDashboardStyles();
+
   // Redux selectors
-  const stats = useSelector((state: RootState) => selectDashboardStats(state))
-  const errors = useSelector((state: RootState) => selectDashboardErrors(state))
-  
+  const stats = useSelector((state: RootState) => selectDashboardStats(state));
+  const errors = useSelector((state: RootState) => selectDashboardErrors(state));
+
   return (
     <div className={styles.container}>
       {/* Stats Section */}
@@ -118,5 +118,5 @@ export const DashboardContent = () => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};

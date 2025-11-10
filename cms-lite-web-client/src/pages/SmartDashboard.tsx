@@ -1,5 +1,5 @@
-import { DashboardContent } from './DashboardContent'
+import { DashboardContent } from './DashboardContent';
 
 export const SmartDashboard = () => {
-  return <DashboardContent />
-}
+  return <DashboardContent />;
+};

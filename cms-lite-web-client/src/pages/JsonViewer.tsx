@@ -7,9 +7,9 @@ import {
   type ChangeEvent,
   type CSSProperties,
   type SyntheticEvent,
-} from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
-import { useSelector } from 'react-redux'
+} from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import {
   Button,
   Textarea,
@@ -32,18 +32,18 @@ import {
   Option,
   Label,
   Caption1,
-} from '@fluentui/react-components'
-import { ArrowLeftRegular, CheckmarkRegular, ArrowImportRegular } from '@fluentui/react-icons'
-import JsonView from '@uiw/react-json-view'
-import { MainLayout } from '../layout'
-import type { ContentItemDetails } from '../types/content'
-import { useAuth } from '../contexts'
-import customAxios from '../utilities/custom-axios'
+} from '@fluentui/react-components';
+import { ArrowLeftRegular, CheckmarkRegular, ArrowImportRegular } from '@fluentui/react-icons';
+import JsonView from '@uiw/react-json-view';
+import { MainLayout } from '../layout';
+import type { ContentItemDetails } from '../types/content';
+import { useAuth } from '../contexts';
+import customAxios from '../utilities/custom-axios';
 import {
   selectDirectoryTreeRoot,
   type ContentItemNode,
   type DirectoryNode,
-} from '../store/slices/directoryTree'
+} from '../store/slices/directoryTree';
 
 const SAMPLE_JSON = {
   title: 'Content Item',
@@ -60,7 +60,7 @@ const SAMPLE_JSON = {
       { type: 'paragraph', text: 'Paste JSON in the panel to inspect the structure.' },
     ],
   },
-}
+};
 
 const useStyles = makeStyles({
   pageRoot: {
@@ -155,7 +155,7 @@ const useStyles = makeStyles({
     width: 0,
     height: 0,
   },
-})
+});
 
 const viewerTheme: Record<string, string> = {
   base00: tokens.colorNeutralBackground1,
@@ -171,7 +171,7 @@ const viewerTheme: Record<string, string> = {
   boolean: tokens.colorPaletteTealForeground2,
   null: tokens.colorPaletteMarigoldForeground2,
   backgroundColor: tokens.colorNeutralBackground1,
-}
+};
 
 type JsonViewerRouteState = {
   resourceId?: string
@@ -694,4 +694,4 @@ export const JsonViewer = () => {
       />
     </MainLayout>
   )
-}
+};

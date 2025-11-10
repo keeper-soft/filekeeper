@@ -1,5 +1,5 @@
-import { makeStyles, tokens, Button, Text } from '@fluentui/react-components'
-import { DeleteRegular } from '@fluentui/react-icons'
+import { makeStyles, tokens, Button, Text } from '@fluentui/react-components';
+import { DeleteRegular } from '@fluentui/react-icons';
 
 const useStyles = makeStyles({
   container: {
@@ -15,17 +15,17 @@ const useStyles = makeStyles({
   message: {
     color: tokens.colorNeutralForeground3,
   },
-})
+});
 
 interface FavoritesBarProps {
-  selectedCount: number
-  onRemoveFavorites: () => void
-  isRemoving?: boolean
+  selectedCount: number;
+  onRemoveFavorites: () => void;
+  isRemoving?: boolean;
 }
 
 export const FavoritesBar = ({ selectedCount, onRemoveFavorites, isRemoving = false }: FavoritesBarProps) => {
-  const styles = useStyles()
-  const hasSelection = selectedCount > 0
+  const styles = useStyles();
+  const hasSelection = selectedCount > 0;
 
   return (
     <div className={styles.container}>
@@ -40,7 +40,7 @@ export const FavoritesBar = ({ selectedCount, onRemoveFavorites, isRemoving = fa
       >
       </Button>
     </div>
-  )
-}
+  );
+};
 
-export default FavoritesBar
+export default FavoritesBar;

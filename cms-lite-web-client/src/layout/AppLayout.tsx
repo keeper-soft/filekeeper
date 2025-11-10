@@ -1,4 +1,4 @@
-import type {CSSProperties, ReactNode, ChangeEvent} from 'react'
+import type {ChangeEvent, CSSProperties, ReactNode} from 'react'
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {isAxiosError} from 'axios'
 import {useNavigate} from 'react-router-dom'
@@ -9,26 +9,22 @@ import {Footer} from './Footer'
 import {ActionBar} from './ActionBar'
 import {NavMenu} from './NavMenu'
 import {ContentArea} from './ContentArea'
-import {
-    ANIMATIONS,
-    BREAKPOINTS,
-    getNavMenuWidth,
-} from './layoutConstants'
+import {ANIMATIONS, BREAKPOINTS, getNavMenuWidth,} from './layoutConstants'
 import {useAuth} from '../contexts'
 import type {AppDispatch} from '../store/store'
 import {
-    fetchDirectoryTree,
-    selectDirectoryTreeRoot,
-    selectDirectoryTreeLoading,
-    selectDirectoryTreeError,
-    selectDirectoryTreeCurrentDirectory,
-    selectDirectoryTreeLastFetchedTenant,
-    setCurrentDirectory,
-    selectDirectoryTreeSelectedFileIds,
-    setSelectedFiles,
     type DirectoryNode,
+    fetchDirectoryTree,
+    selectDirectoryTreeCurrentDirectory,
+    selectDirectoryTreeError,
+    selectDirectoryTreeLastFetchedTenant,
+    selectDirectoryTreeLoading,
+    selectDirectoryTreeRoot,
+    selectDirectoryTreeSelectedFileIds,
+    setCurrentDirectory,
+    setSelectedFiles,
 } from '../store/slices/directoryTree'
-import { addFavorite, selectFavoritesAdding } from '../store/slices/favorites'
+import {addFavorite, selectFavoritesAdding} from '../store/slices/favorites'
 import {FileDetailsModal} from '../components/FileDetailsModal'
 import {CreateDirectoryDialog} from '../components/CreateDirectoryDialog'
 import {SoftDeleteDialog, type SoftDeleteItem} from '../components/SoftDeleteDialog'
@@ -674,22 +670,17 @@ export const AppLayout = ({children}: AppLayoutProps) => {
     const handleImportFileChange = (event: ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0]
         event.target.value = ''
-
         if (!pendingImportType || !file) {
             setPendingImportType(null)
             return
         }
-
         if (!effectiveDirectory || !user?.tenant?.name) {
             setPendingImportType(null)
             return
         }
-
         const tenantName = user.tenant.name
-
         const sanitizedResourceName = sanitizeResourceName(file.name)
         const targetPath = appendPathSegment(parentPathDisplay, sanitizedResourceName)
-
         if (pendingImportType === 'json') {
             const reader = new FileReader()
             reader.onload = () => {
@@ -701,17 +692,13 @@ export const AppLayout = ({children}: AppLayoutProps) => {
                                 : new TextDecoder().decode(reader.result as ArrayBuffer)
 
                         JSON.parse(text)
-                        const resourceName = sanitizedResourceName
-
-                        await customAxios.put(`/v1/${tenantName}/${encodeURIComponent(resourceName)}`, text, {
+                        await customAxios.put(`/v1/${tenantName}/${encodeURIComponent(sanitizedResourceName)}`, text, {
                             headers: {
                                 'Content-Type': 'application/json',
                                 'X-Directory-Id': effectiveDirectory.id,
                             },
                         })
-
                         await dispatch(fetchDirectoryTree(tenantName))
-
                         setInfoDialogState({
                             open: true,
                             title: 'Import complete',
@@ -769,32 +756,27 @@ export const AppLayout = ({children}: AppLayoutProps) => {
                         const text =
                             typeof reader.result === 'string'
                                 ? reader.result
-                                : new TextDecoder().decode(reader.result as ArrayBuffer)
+                                : new TextDecoder().decode(reader.result as ArrayBuffer);
 
                         const parser = new DOMParser()
                         const parsedDoc = parser.parseFromString(text, 'application/xml')
                         if (parsedDoc.getElementsByTagName('parsererror').length > 0) {
-                            throw new Error('Invalid XML format')
+                            throw new Error('Invalid XML format');
                         }
-
-                        const resourceName = sanitizedResourceName
-
-                        await customAxios.put(`/v1/${tenantName}/${encodeURIComponent(resourceName)}`, text, {
+                        await customAxios.put(`/v1/${tenantName}/${encodeURIComponent(sanitizedResourceName)}`, text, {
                             headers: {
                                 'Content-Type': 'application/xml',
                                 'X-Directory-Id': effectiveDirectory.id,
                             },
-                        })
-
-                        await dispatch(fetchDirectoryTree(tenantName))
-
+                        });
+                        await dispatch(fetchDirectoryTree(tenantName));
                         setInfoDialogState({
                             open: true,
                             title: 'Import complete',
                             description: `File "${file.name}" imported successfully to ${targetPath}.`,
                             primaryLabel: 'Close',
                             isLoading: false,
-                        })
+                        });
                     } catch (error) {
                         console.error('Failed to import XML file', error)
                         setInfoDialogState({
@@ -835,21 +817,18 @@ export const AppLayout = ({children}: AppLayoutProps) => {
         }
 
         if (pendingImportType === 'pdf') {
-            setIsImporting(true)
+            setIsImporting(true);
             setInfoDialogState({
                 open: true,
                 title: 'Importing PDF',
                 description: `Uploading "${file.name}"...`,
                 primaryLabel: 'Close',
                 isLoading: true,
-            })
-
+            });
             void (async () => {
                 try {
-                    const resourceName = sanitizedResourceName
-
                     await customAxios.put(
-                        `/v1/${tenantName}/${encodeURIComponent(resourceName)}`,
+                        `/v1/${tenantName}/${encodeURIComponent(sanitizedResourceName)}`,
                         file,
                         {
                             headers: {
@@ -857,17 +836,16 @@ export const AppLayout = ({children}: AppLayoutProps) => {
                                 'X-Directory-Id': effectiveDirectory.id,
                             },
                         },
-                    )
+                    );
 
-                    await dispatch(fetchDirectoryTree(tenantName))
-
+                    await dispatch(fetchDirectoryTree(tenantName));
                     setInfoDialogState({
                         open: true,
                         title: 'Import complete',
                         description: `File "${file.name}" imported successfully to ${targetPath}.`,
                         primaryLabel: 'Close',
                         isLoading: false,
-                    })
+                    });
                 } catch {
                     setInfoDialogState({
                         open: true,
@@ -875,14 +853,13 @@ export const AppLayout = ({children}: AppLayoutProps) => {
                         description: 'There was a problem uploading the PDF file. Please try again.',
                         primaryLabel: 'Close',
                         isLoading: false,
-                    })
+                    });
                 } finally {
-                    setIsImporting(false)
-                    setPendingImportType(null)
+                    setIsImporting(false);
+                    setPendingImportType(null);
                 }
             })()
-
-            return
+            return;
         }
 
         setPendingImportType(null)
@@ -1004,6 +981,27 @@ export const AppLayout = ({children}: AppLayoutProps) => {
                 fileExtension: details?.metadata?.fileExtension,
                 version: details?.latestVersion,
                 viewer: 'xml' as const,
+            },
+        })
+    }
+
+    const handleOpenPdfViewer = (resourceId: string, details: ContentItemDetails | null) => {
+        if (!resourceId) {
+            return
+        }
+
+        const tenantName = user?.tenant?.name
+
+        setDetailsState(prev => ({ ...prev, open: false }))
+        navigate('/tools/pdf-viewer', {
+            state: {
+                resourceId,
+                metadata: details,
+                tenantName,
+                contentType: details?.contentType,
+                fileExtension: details?.metadata?.fileExtension,
+                version: details?.latestVersion,
+                viewer: 'pdf' as const,
             },
         })
     }
@@ -1164,6 +1162,7 @@ export const AppLayout = ({children}: AppLayoutProps) => {
                 onRetry={detailsState.error ? handleRetryDetails : undefined}
                 onOpenJsonViewer={handleOpenJsonViewer}
                 onOpenXmlViewer={handleOpenXmlViewer}
+                onOpenPdfViewer={handleOpenPdfViewer}
             />
         </div>
     )
