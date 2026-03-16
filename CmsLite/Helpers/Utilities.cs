@@ -11,7 +11,8 @@ public enum SupportedContentType
 {
     Json,
     Xml,
-    Pdf
+    Pdf,
+    Csv
 }
 
 public class Utilities
@@ -141,6 +142,57 @@ public class Utilities
                data[4] == 0x2D;   // -
     }
 
+    public static bool IsValidCsv(byte[] data)
+    {
+        if (data == null || data.Length == 0)
+            return false;
+
+        try
+        {
+            var text = System.Text.Encoding.UTF8.GetString(data);
+            // A valid CSV must have at least one non-empty line
+            var lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            return lines.Length > 0;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public static (string delimiter, int columnCount, int rowCount) ParseCsvInfo(byte[] data)
+    {
+        var text = System.Text.Encoding.UTF8.GetString(data);
+        var lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+        // Auto-detect delimiter from the first line
+        var firstLine = lines[0];
+        var delimiter = DetectCsvDelimiter(firstLine);
+
+        var columnCount = firstLine.Split(delimiter).Length;
+        var rowCount = lines.Length;
+
+        return (delimiter, columnCount, rowCount);
+    }
+
+    private static string DetectCsvDelimiter(string firstLine)
+    {
+        // Count occurrences of common delimiters in the first line
+        var candidates = new[] { ",", ";", "\t", "|" };
+        var best = ",";
+        var bestCount = 0;
+        foreach (var candidate in candidates)
+        {
+            var count = firstLine.Split(candidate).Length - 1;
+            if (count > bestCount)
+            {
+                bestCount = count;
+                best = candidate;
+            }
+        }
+        return best;
+    }
+
     public static bool IsValidJsonWithComments(byte[] data)
     {
         var options = new System.Text.Json.JsonDocumentOptions
@@ -193,13 +245,21 @@ public class Utilities
             "application/xml" => SupportedContentType.Xml,
             "text/xml" => SupportedContentType.Xml,
             "application/pdf" => SupportedContentType.Pdf,
-            _ => throw new ArgumentException($"Unsupported content type '{mediaType}'. Only 'application/json', 'application/xml', 'text/xml', and 'application/pdf' are supported.")
+            "text/csv" => SupportedContentType.Csv,
+            _ => throw new ArgumentException($"Unsupported content type '{mediaType}'. Only 'application/json', 'application/xml', 'text/xml', 'application/pdf', and 'text/csv' are supported.")
         };
     }
 
     public static string GenerateBlobKey(string tenant, string resource, int version, SupportedContentType contentType)
     {
-        var ext = contentType.ToString().ToLower();
+        var ext = contentType switch
+        {
+            SupportedContentType.Json => "json",
+            SupportedContentType.Xml => "xml",
+            SupportedContentType.Pdf => "pdf",
+            SupportedContentType.Csv => "csv",
+            _ => contentType.ToString().ToLower()
+        };
         return $"{tenant}/{resource}_v{version}.{ext}";
     }
 }
