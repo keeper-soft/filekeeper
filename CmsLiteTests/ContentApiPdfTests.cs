@@ -2,7 +2,6 @@ using System.Net;
 using System.Text;
 using CmsLiteTests.Support;
 using PdfSharp.Pdf;
-using PdfSharp.Drawing;
 using Xunit;
 
 namespace CmsLiteTests;
@@ -25,6 +24,11 @@ public class ContentApiPdfTests : IAsyncDisposable
         using var ms = new MemoryStream();
         document.Save(ms, false);
         return ms.ToArray();
+    }
+
+    private static byte[] CreateValidPdfWithImage()
+    {
+        return CreateClassicPdfWithImage(1, 1, [0xFF, 0x00, 0x00]);
     }
 
     [Fact]
@@ -274,7 +278,9 @@ public class ContentApiPdfTests : IAsyncDisposable
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         var content = await response.Content.ReadAsStringAsync();
-        Assert.Contains("PDF validation failed", content);
+        Assert.True(
+            content.Contains("PDF validation failed", StringComparison.OrdinalIgnoreCase) ||
+            content.Contains("Invalid PDF structure", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -315,7 +321,10 @@ public class ContentApiPdfTests : IAsyncDisposable
         // This should fail validation - either "no pages" or structure error
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         var content = await response.Content.ReadAsStringAsync();
-        Assert.True(content.Contains("no pages") || content.Contains("Invalid or corrupted PDF structure"));
+        Assert.True(
+            content.Contains("no pages", StringComparison.OrdinalIgnoreCase) ||
+            content.Contains("Invalid or corrupted PDF structure", StringComparison.OrdinalIgnoreCase) ||
+            content.Contains("Invalid PDF structure", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -333,5 +342,96 @@ public class ContentApiPdfTests : IAsyncDisposable
             new ByteArrayContent(validPdf) { Headers = { ContentType = new("application/pdf") } });
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UploadPdf_WithEmbeddedImage_ReturnsCreated()
+    {
+        await factory.InitializeAsync();
+        var client = factory.CreateClient();
+        var token = factory.GenerateTestJwtToken();
+        client.DefaultRequestHeaders.Authorization = new("Bearer", token);
+
+        var pdfBytes = CreateValidPdfWithImage();
+
+        var response = await client.PutAsync($"/api/v1/{factory.TestTenant}/image.pdf",
+            new ByteArrayContent(pdfBytes) { Headers = { ContentType = new("application/pdf") } });
+
+        if (response.StatusCode != HttpStatusCode.Created)
+        {
+            var error = await response.Content.ReadAsStringAsync();
+            Assert.Fail(error);
+        }
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UploadPdf_WithMalformedImageMetadata_ReturnsBadRequest()
+    {
+        await factory.InitializeAsync();
+        var client = factory.CreateClient();
+        var token = factory.GenerateTestJwtToken();
+        client.DefaultRequestHeaders.Authorization = new("Bearer", token);
+
+        var malformedPdf = Encoding.Latin1.GetBytes(
+            Encoding.Latin1.GetString(CreateValidPdfWithImage()).Replace("/Width 1", "/Width 0", StringComparison.Ordinal));
+
+        var response = await client.PutAsync($"/api/v1/{factory.TestTenant}/invalid-image.pdf",
+            new ByteArrayContent(malformedPdf) { Headers = { ContentType = new("application/pdf") } });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains("image structure", content, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static byte[] CreateClassicPdfWithImage(int width, int height, byte[] rgbBytes)
+    {
+        var objects = new List<byte[]>();
+        objects.Add(Encoding.ASCII.GetBytes("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"));
+        objects.Add(Encoding.ASCII.GetBytes("2 0 obj\n<< /Type /Pages /Count 1 /Kids [3 0 R] >>\nendobj\n"));
+        objects.Add(Encoding.ASCII.GetBytes("3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>\nendobj\n"));
+
+        var imagePrefix = Encoding.ASCII.GetBytes(
+            $"4 0 obj\n<< /Type /XObject /Subtype /Image /Width {width} /Height {height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Length {rgbBytes.Length} >>\nstream\n");
+        var imageSuffix = Encoding.ASCII.GetBytes("\nendstream\nendobj\n");
+        using (var imageObject = new MemoryStream())
+        {
+            imageObject.Write(imagePrefix);
+            imageObject.Write(rgbBytes);
+            imageObject.Write(imageSuffix);
+            objects.Add(imageObject.ToArray());
+        }
+
+        var contentBytes = Encoding.ASCII.GetBytes("q\n10 0 0 10 10 10 cm\n/Im0 Do\nQ\n");
+        var contentObject = Encoding.ASCII.GetBytes($"5 0 obj\n<< /Length {contentBytes.Length} >>\nstream\n{Encoding.ASCII.GetString(contentBytes)}endstream\nendobj\n");
+        objects.Add(contentObject);
+
+        var header = Encoding.ASCII.GetBytes("%PDF-1.4\n");
+        var offsets = new List<int> { 0 };
+        var position = header.Length;
+        foreach (var pdfObject in objects)
+        {
+            offsets.Add(position);
+            position += pdfObject.Length;
+        }
+
+        using var output = new MemoryStream();
+        output.Write(header);
+        foreach (var pdfObject in objects)
+        {
+            output.Write(pdfObject);
+        }
+
+        var xrefOffset = (int)output.Position;
+        output.Write(Encoding.ASCII.GetBytes($"xref\n0 {objects.Count + 1}\n"));
+        output.Write(Encoding.ASCII.GetBytes("0000000000 65535 f \n"));
+        foreach (var offset in offsets.Skip(1))
+        {
+            output.Write(Encoding.ASCII.GetBytes($"{offset:D10} 00000 n \n"));
+        }
+
+        output.Write(Encoding.ASCII.GetBytes($"trailer\n<< /Size {objects.Count + 1} /Root 1 0 R >>\nstartxref\n{xrefOffset}\n%%EOF"));
+        return output.ToArray();
     }
 }

@@ -5,6 +5,7 @@ using CmsLite.Helpers;
 using CmsLite.Helpers.RequestMappers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Options;
 
 namespace CmsLite.Content;
 
@@ -23,6 +24,7 @@ public static class ContentEndpoints
             CmsLiteDbContext db,
             IBlobRepo blobs,
             IDirectoryRepo directoryRepo,
+            IOptions<PdfValidationOptions> pdfValidationOptions,
             ILogger<Program> logger,
             CancellationToken cancellationToken) =>
         {
@@ -52,17 +54,7 @@ public static class ContentEndpoints
             // Validate content format
             if (contentType == SupportedContentType.Pdf)
             {
-                // Use comprehensive PDF validation with PdfSharp
-                var pdfValidationOptions = new PdfValidationOptions
-                {
-                    MaxFileSizeBytes = 8388608, // 8 MB
-                    MaxPageCount = 1000,
-                    AllowPasswordProtected = false,
-                    ScanForEmbeddedFiles = true,
-                    ScanForJavaScript = true
-                };
-
-                var pdfValidationResult = PdfValidator.ValidatePdf(bytes, pdfValidationOptions, logger);
+                var pdfValidationResult = PdfValidator.ValidatePdf(bytes, pdfValidationOptions.Value, logger);
                 if (!pdfValidationResult.IsValid)
                 {
                     return Results.BadRequest(pdfValidationResult.ErrorMessage);
