@@ -31,7 +31,7 @@ public static class ContentEndpoints
             // Validate content type is specified
             if (string.IsNullOrEmpty(req.ContentType))
             {
-                return Results.BadRequest("Content-Type header is required. Supported types: application/json, application/xml, text/xml, application/pdf");
+                return Results.BadRequest("Content-Type header is required. Supported types: application/json, application/xml, text/xml, application/pdf, text/csv");
             }
 
             // Parse and validate supported content type
@@ -66,6 +66,13 @@ public static class ContentEndpoints
                 if (!pdfValidationResult.IsValid)
                 {
                     return Results.BadRequest(pdfValidationResult.ErrorMessage);
+                }
+            }
+            else if (contentType == SupportedContentType.Csv)
+            {
+                if (!Utilities.IsValidCsv(bytes))
+                {
+                    return Results.BadRequest("Invalid csv content format.");
                 }
             }
             else
@@ -147,6 +154,7 @@ public static class ContentEndpoints
                                 SupportedContentType.Json => "application/json",
                                 SupportedContentType.Xml => "application/xml",
                                 SupportedContentType.Pdf => "application/pdf",
+                                SupportedContentType.Csv => "text/csv",
                                 _ => "application/json"
                             },
                             ByteSize = size,
@@ -171,6 +179,7 @@ public static class ContentEndpoints
                             SupportedContentType.Json => "application/json",
                             SupportedContentType.Xml => "application/xml",
                             SupportedContentType.Pdf => "application/pdf",
+                            SupportedContentType.Csv => "text/csv",
                             _ => "application/json"
                         };
                     }
@@ -186,6 +195,39 @@ public static class ContentEndpoints
                         CreatedAtUtc = DateTime.UtcNow
                     });
                     await db.SaveChangesAsync(cancellationToken);
+
+                    // Create or update CSV metadata when the content type is CSV
+                    if (contentType == SupportedContentType.Csv)
+                    {
+                        var (delimiter, columnCount, rowCount) = Utilities.ParseCsvInfo(bytes);
+                        var existingCsvMetadata = await db.CsvMetadataTable
+                            .SingleOrDefaultAsync(x => x.ContentItemId == item.Id, cancellationToken);
+                        if (existingCsvMetadata == null)
+                        {
+                            db.CsvMetadataTable.Add(new DbSet.CsvMetadata
+                            {
+                                TenantId = tenantId,
+                                ContentItemId = item.Id,
+                                Delimiter = delimiter,
+                                HasHeader = true,
+                                Encoding = "UTF-8",
+                                QuoteChar = "\"",
+                                ColumnCount = columnCount,
+                                RowCount = rowCount,
+                                CreatedAtUtc = DateTime.UtcNow,
+                                UpdatedAtUtc = DateTime.UtcNow
+                            });
+                        }
+                        else
+                        {
+                            existingCsvMetadata.Delimiter = delimiter;
+                            existingCsvMetadata.ColumnCount = columnCount;
+                            existingCsvMetadata.RowCount = rowCount;
+                            existingCsvMetadata.UpdatedAtUtc = DateTime.UtcNow;
+                        }
+                        await db.SaveChangesAsync(cancellationToken);
+                    }
+
                     return Results.Created($"/v1/{tenant}/{resource}?version={nextVersion}", new { tenant, resource, version = nextVersion, etag, sha256, size = Helpers.Utilities.CalculateFileSizeInBestUnit(size) });
                 }
                 catch (Exception)
@@ -253,6 +295,9 @@ public static class ContentEndpoints
                 case "application/pdf":
                     contentTypeEnum = SupportedContentType.Pdf;
                     break;
+                case "text/csv":
+                    contentTypeEnum = SupportedContentType.Csv;
+                    break;
                 default:
                     return Results.BadRequest($"Unsupported content type: {latest.ContentType}");
             }
@@ -297,6 +342,7 @@ public static class ContentEndpoints
             {
                 "application/xml" => SupportedContentType.Xml,
                 "application/pdf" => SupportedContentType.Pdf,
+                "text/csv" => SupportedContentType.Csv,
                 _ => SupportedContentType.Json
             };
             var blobKey = Utilities.GenerateBlobKey(tenant, resource, v, contentTypeEnum);

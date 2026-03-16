@@ -16,6 +16,7 @@ public class CmsLiteDbContext : DbContext, ICmsLiteDbContext
     public Microsoft.EntityFrameworkCore.DbSet<DbSet.ContentItem> ContentItemsTable => Set<DbSet.ContentItem>();
     public Microsoft.EntityFrameworkCore.DbSet<DbSet.ContentVersion> ContentVersionsTable => Set<DbSet.ContentVersion>();
     public Microsoft.EntityFrameworkCore.DbSet<DbSet.Directory> DirectoriesTable => Set<DbSet.Directory>();
+    public Microsoft.EntityFrameworkCore.DbSet<DbSet.CsvMetadata> CsvMetadataTable => Set<DbSet.CsvMetadata>();
 
     Microsoft.EntityFrameworkCore.DbSet<DbSet.User> ICmsLiteDbContext.Users => UsersTable;
 
@@ -28,6 +29,8 @@ public class CmsLiteDbContext : DbContext, ICmsLiteDbContext
     Microsoft.EntityFrameworkCore.DbSet<DbSet.ContentVersion> ICmsLiteDbContext.ContentVersions => ContentVersionsTable;
 
     Microsoft.EntityFrameworkCore.DbSet<DbSet.Tenant> ICmsLiteDbContext.Tenants => TenantsTable;
+
+    Microsoft.EntityFrameworkCore.DbSet<DbSet.CsvMetadata> ICmsLiteDbContext.CsvMetadataItems => CsvMetadataTable;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -100,6 +103,22 @@ public class CmsLiteDbContext : DbContext, ICmsLiteDbContext
                 .WithMany()
                 .HasForeignKey(e => e.TenantId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+        modelBuilder.Entity<DbSet.CsvMetadata>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ContentItemId).IsUnique();
+            entity.Property(e => e.Delimiter).HasMaxLength(10);
+            entity.Property(e => e.QuoteChar).HasMaxLength(10);
+            entity.Property(e => e.Encoding).HasMaxLength(50);
+            entity.HasOne(e => e.Tenant)
+                .WithMany()
+                .HasForeignKey(e => e.TenantId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.ContentItem)
+                .WithOne()
+                .HasForeignKey<DbSet.CsvMetadata>(e => e.ContentItemId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
@@ -197,6 +216,24 @@ public static class DbSet
         public Directory? Parent { get; set; }
         public ICollection<Directory> SubDirectories { get; set; } = new List<Directory>();
         public ICollection<ContentItem> ContentItems { get; set; } = new List<ContentItem>();
+    }
+    public class CsvMetadata
+    {
+        public int Id { get; set; }
+        public string TenantId { get; set; } = default!; // Foreign key
+        public int ContentItemId { get; set; } // Foreign key
+        public string Delimiter { get; set; } = ",";
+        public bool HasHeader { get; set; } = true;
+        public string Encoding { get; set; } = "UTF-8";
+        public string QuoteChar { get; set; } = "\"";
+        public int? ColumnCount { get; set; }
+        public int? RowCount { get; set; }
+        public DateTime CreatedAtUtc { get; set; }
+        public DateTime UpdatedAtUtc { get; set; }
+
+        // Navigation properties
+        public Tenant Tenant { get; set; } = default!;
+        public ContentItem ContentItem { get; set; } = default!;
     }
 }
 
