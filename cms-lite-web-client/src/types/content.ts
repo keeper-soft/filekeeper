@@ -35,3 +35,9 @@ export interface ContentItemDetails {
   versions: ContentItemVersion[]
   metadata: ContentItemMetadata
 }
+
+export interface CsvConfig {
+  delimiter: string
+  hasHeader: boolean
+  quoteChar: string
+}

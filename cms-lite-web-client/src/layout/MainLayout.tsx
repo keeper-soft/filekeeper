@@ -97,7 +97,7 @@ export const MainLayout = ({ children, variant = 'explorer' }: MainLayoutProps) 
     console.log('Creating new directory...')
   }
 
-  const handleImportContent = (type: 'json' | 'xml' | 'pdf') => {
+  const handleImportContent = (type: 'json' | 'xml' | 'pdf' | 'csv') => {
     console.log(`Import ${type.toUpperCase()} content...`)
   }
 

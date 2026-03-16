@@ -12,6 +12,7 @@ interface FileDetailsModalProps {
   onRetry?: () => void
   onOpenJsonViewer?: (resourceId: string, details: ContentItemDetails | null) => void
   onOpenXmlViewer?: (resourceId: string, details: ContentItemDetails | null) => void
+  onOpenCsvViewer?: (resourceId: string, details: ContentItemDetails | null) => void
 }
 
 const useStyles = makeStyles({
@@ -77,6 +78,7 @@ export const FileDetailsModal = ({
   onRetry,
   onOpenJsonViewer,
   onOpenXmlViewer,
+  onOpenCsvViewer,
 }: FileDetailsModalProps) => {
   const styles = useStyles()
 
@@ -103,6 +105,12 @@ export const FileDetailsModal = ({
       details &&
       (details.contentType?.toLowerCase().includes('xml') ||
         details.metadata?.fileExtension?.toLowerCase() === 'xml'),
+  )
+  const canOpenCsvViewer = Boolean(
+    resourceId &&
+      details &&
+      (details.contentType?.toLowerCase().includes('csv') ||
+        details.metadata?.fileExtension?.toLowerCase() === 'csv'),
   )
 
   return (
@@ -215,6 +223,18 @@ export const FileDetailsModal = ({
                 }}
               >
                 See in XML viewer
+              </Link>
+            )}
+            {canOpenCsvViewer && onOpenCsvViewer && resourceId && (
+              <Link
+                className={styles.actionLink}
+                href="#"
+                onClick={(event) => {
+                  event.preventDefault()
+                  onOpenCsvViewer(resourceId, details)
+                }}
+              >
+                See in CSV viewer
               </Link>
             )}
             <Button appearance="primary" onClick={onClose} disabled={isLoading}>

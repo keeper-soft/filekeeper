@@ -54,7 +54,7 @@ const useStyles = makeStyles({
   },
 })
 
-type ImportContentType = 'json' | 'xml' | 'pdf'
+type ImportContentType = 'json' | 'xml' | 'pdf' | 'csv'
 
 interface ActionBarProps {
   hasSelection: boolean
@@ -112,6 +112,7 @@ export const ActionBar = ({
               <MenuItem onClick={() => onImportContent?.('json')}>JSON</MenuItem>
               <MenuItem onClick={() => onImportContent?.('xml')}>XML</MenuItem>
               <MenuItem onClick={() => onImportContent?.('pdf')}>PDF</MenuItem>
+              <MenuItem onClick={() => onImportContent?.('csv')}>CSV</MenuItem>
             </MenuList>
           </MenuPopover>
         </Menu>

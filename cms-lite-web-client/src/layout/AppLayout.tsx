@@ -30,9 +30,10 @@ import {FileDetailsModal} from '../components/FileDetailsModal'
 import {CreateDirectoryDialog} from '../components/CreateDirectoryDialog'
 import {SoftDeleteDialog, type SoftDeleteItem} from '../components/SoftDeleteDialog'
 import {InfoDialog} from '../components/modals/InfoDialog'
+import {CsvConfigDialog} from '../components/CsvConfigDialog'
 import customAxios from '../utilities/custom-axios'
 import {sanitizeResourceName} from '../utilities/resource-name'
-import type {ContentItemDetails} from '../types/content'
+import type {ContentItemDetails, CsvConfig} from '../types/content'
 
 const useStyles = makeStyles({
     appContainer: {
@@ -224,7 +225,9 @@ export const AppLayout = ({children}: AppLayoutProps) => {
         successMessage: null,
     })
     const importFileInputRef = useRef<HTMLInputElement | null>(null)
-    const [pendingImportType, setPendingImportType] = useState<'json' | 'xml' | 'pdf' | null>(null)
+    const [pendingImportType, setPendingImportType] = useState<'json' | 'xml' | 'pdf' | 'csv' | null>(null)
+    const [pendingCsvConfig, setPendingCsvConfig] = useState<CsvConfig | null>(null)
+    const [csvConfigDialogOpen, setCsvConfigDialogOpen] = useState(false)
     const [importAccept, setImportAccept] = useState('')
     const [isImporting, setIsImporting] = useState(false)
     const [isDownloading, setIsDownloading] = useState(false)
@@ -305,8 +308,14 @@ export const AppLayout = ({children}: AppLayoutProps) => {
         })
     }
 
-    const handleImportContent = (type: 'json' | 'xml' | 'pdf') => {
+    const handleImportContent = (type: 'json' | 'xml' | 'pdf' | 'csv') => {
         if (!effectiveDirectory || !user?.tenant?.name) {
+            return
+        }
+
+        if (type === 'csv') {
+            setPendingImportType('csv')
+            setCsvConfigDialogOpen(true)
             return
         }
 
@@ -321,6 +330,21 @@ export const AppLayout = ({children}: AppLayoutProps) => {
         window.setTimeout(() => {
             importFileInputRef.current?.click()
         }, 0)
+    }
+
+    const handleCsvConfigConfirm = (config: CsvConfig) => {
+        setCsvConfigDialogOpen(false)
+        setPendingCsvConfig(config)
+        setImportAccept('text/csv,.csv')
+        window.setTimeout(() => {
+            importFileInputRef.current?.click()
+        }, 0)
+    }
+
+    const handleCsvConfigCancel = () => {
+        setCsvConfigDialogOpen(false)
+        setPendingImportType(null)
+        setPendingCsvConfig(null)
     }
 
     const handleCreateContent = (type: 'json' | 'xml') => {
@@ -878,7 +902,97 @@ export const AppLayout = ({children}: AppLayoutProps) => {
             return
         }
 
+        if (pendingImportType === 'csv') {
+            const csvConfig = pendingCsvConfig
+            const reader = new FileReader()
+            reader.onload = () => {
+                void (async () => {
+                    try {
+                        const text =
+                            typeof reader.result === 'string'
+                                ? reader.result
+                                : new TextDecoder().decode(reader.result as ArrayBuffer)
+
+                        // Validate CSV: must have at least one non-empty line
+                        const lines = text.split(/\r?\n/).filter((l) => l.trim() !== '')
+                        if (lines.length === 0) {
+                            throw new Error('The CSV file appears to be empty.')
+                        }
+
+                        // Validate delimiter usage: every row should have at least one delimiter
+                        const delim = csvConfig?.delimiter ?? ','
+                        const hasDelimiter = lines.every((l) => l.includes(delim))
+                        if (!hasDelimiter) {
+                            throw new Error(
+                                `The selected delimiter "${delim === '\t' ? '\\t' : delim}" was not found in all rows. Please verify the delimiter setting.`,
+                            )
+                        }
+
+                        const resourceName = sanitizedResourceName
+
+                        await customAxios.put(`/v1/${tenantName}/${encodeURIComponent(resourceName)}`, text, {
+                            headers: {
+                                'Content-Type': 'text/csv',
+                                'X-Directory-Id': effectiveDirectory.id,
+                            },
+                        })
+
+                        await dispatch(fetchDirectoryTree(tenantName))
+
+                        setInfoDialogState({
+                            open: true,
+                            title: 'Import complete',
+                            description: `File "${file.name}" imported successfully to ${targetPath}.`,
+                            primaryLabel: 'Close',
+                            isLoading: false,
+                        })
+                    } catch (error) {
+                        console.error('Failed to import CSV file', error)
+                        const message =
+                            error instanceof Error
+                                ? error.message
+                                : 'There was a problem uploading the CSV file. Please verify the contents and try again.'
+                        setInfoDialogState({
+                            open: true,
+                            title: 'CSV upload failed',
+                            description: message,
+                            primaryLabel: 'Close',
+                            isLoading: false,
+                        })
+                    } finally {
+                        setIsImporting(false)
+                        setPendingImportType(null)
+                        setPendingCsvConfig(null)
+                    }
+                })()
+            }
+            reader.onerror = () => {
+                console.error('Failed to read CSV file', reader.error)
+                setInfoDialogState({
+                    open: true,
+                    title: 'File read error',
+                    description: 'Unable to read the selected CSV file. Please try again.',
+                    primaryLabel: 'Close',
+                    isLoading: false,
+                })
+                setIsImporting(false)
+                setPendingImportType(null)
+                setPendingCsvConfig(null)
+            }
+            setIsImporting(true)
+            setInfoDialogState({
+                open: true,
+                title: 'Importing CSV',
+                description: `Uploading "${file.name}"...`,
+                primaryLabel: 'Close',
+                isLoading: true,
+            })
+            reader.readAsText(file)
+            return
+        }
+
         setPendingImportType(null)
+        setPendingCsvConfig(null)
     }
 
     const handleCancelSoftDelete = () => {
@@ -997,6 +1111,27 @@ export const AppLayout = ({children}: AppLayoutProps) => {
                 fileExtension: details?.metadata?.fileExtension,
                 version: details?.latestVersion,
                 viewer: 'xml' as const,
+            },
+        })
+    }
+
+    const handleOpenCsvViewer = (resourceId: string, details: ContentItemDetails | null) => {
+        if (!resourceId) {
+            return
+        }
+
+        const tenantName = user?.tenant?.name
+
+        setDetailsState(prev => ({ ...prev, open: false }))
+        navigate('/tools/csv-viewer', {
+            state: {
+                resourceId,
+                metadata: details,
+                tenantName,
+                contentType: details?.contentType,
+                fileExtension: details?.metadata?.fileExtension,
+                version: details?.latestVersion,
+                viewer: 'csv' as const,
             },
         })
     }
@@ -1122,6 +1257,12 @@ export const AppLayout = ({children}: AppLayoutProps) => {
                 onRetry={detailsState.error ? handleRetryDetails : undefined}
                 onOpenJsonViewer={handleOpenJsonViewer}
                 onOpenXmlViewer={handleOpenXmlViewer}
+                onOpenCsvViewer={handleOpenCsvViewer}
+            />
+            <CsvConfigDialog
+                open={csvConfigDialogOpen}
+                onConfirm={handleCsvConfigConfirm}
+                onCancel={handleCsvConfigCancel}
             />
         </div>
     )
