@@ -4,6 +4,7 @@ using CmsLite.Database.Repositories;
 using CmsLite.Database;
 using CmsLite.Authentication;
 using CmsLite.Content;
+using CmsLite.Helpers;
 using CmsLite.Helpers.RequestMappers;
 using CmsLite.Monitoring;
 using Microsoft.OpenApi.Models;
@@ -25,6 +26,7 @@ builder.Services.AddDbContext<CmsLiteDbContext>(options =>
 // Add blob storage services
 builder.Services.AddSingleton(_ => new BlobServiceClient(storageConnectionString));
 builder.Services.AddSingleton<IBlobRepo, BlobRepo>();
+builder.Services.Configure<PdfValidationOptions>(configuration.GetSection("PdfValidation"));
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
