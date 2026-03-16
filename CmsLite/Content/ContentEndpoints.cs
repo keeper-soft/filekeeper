@@ -31,7 +31,7 @@ public static class ContentEndpoints
             // Validate content type is specified
             if (string.IsNullOrEmpty(req.ContentType))
             {
-                return Results.BadRequest("Content-Type header is required. Supported types: application/json, application/xml, text/xml, application/pdf");
+                return Results.BadRequest("Content-Type header is required. Supported types: application/json, application/xml, text/xml, application/pdf, text/csv");
             }
 
             // Parse and validate supported content type
@@ -70,11 +70,12 @@ public static class ContentEndpoints
             }
             else
             {
-                // Use basic validation for JSON and XML
+                // Use basic validation for JSON, XML, and CSV
                 var isValidContent = contentType switch
                 {
                     SupportedContentType.Json => Utilities.IsValidJson(bytes),
                     SupportedContentType.Xml => Utilities.IsValidXml(bytes),
+                    SupportedContentType.Csv => Utilities.IsValidCsv(bytes),
                     _ => false
                 };
 
@@ -147,6 +148,7 @@ public static class ContentEndpoints
                                 SupportedContentType.Json => "application/json",
                                 SupportedContentType.Xml => "application/xml",
                                 SupportedContentType.Pdf => "application/pdf",
+                                SupportedContentType.Csv => "text/csv",
                                 _ => "application/json"
                             },
                             ByteSize = size,
@@ -171,6 +173,7 @@ public static class ContentEndpoints
                             SupportedContentType.Json => "application/json",
                             SupportedContentType.Xml => "application/xml",
                             SupportedContentType.Pdf => "application/pdf",
+                            SupportedContentType.Csv => "text/csv",
                             _ => "application/json"
                         };
                     }
@@ -253,6 +256,9 @@ public static class ContentEndpoints
                 case "application/pdf":
                     contentTypeEnum = SupportedContentType.Pdf;
                     break;
+                case "text/csv":
+                    contentTypeEnum = SupportedContentType.Csv;
+                    break;
                 default:
                     return Results.BadRequest($"Unsupported content type: {latest.ContentType}");
             }
@@ -297,6 +303,7 @@ public static class ContentEndpoints
             {
                 "application/xml" => SupportedContentType.Xml,
                 "application/pdf" => SupportedContentType.Pdf,
+                "text/csv" => SupportedContentType.Csv,
                 _ => SupportedContentType.Json
             };
             var blobKey = Utilities.GenerateBlobKey(tenant, resource, v, contentTypeEnum);

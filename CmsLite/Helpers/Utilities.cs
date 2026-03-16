@@ -11,7 +11,8 @@ public enum SupportedContentType
 {
     Json,
     Xml,
-    Pdf
+    Pdf,
+    Csv
 }
 
 public class Utilities
@@ -125,6 +126,24 @@ public class Utilities
         }
     }
 
+    public static bool IsValidCsv(byte[] data)
+    {
+        if (data == null || data.Length == 0)
+            return false;
+
+        try
+        {
+            var text = System.Text.Encoding.UTF8.GetString(data);
+            // A valid CSV must have at least one non-empty line
+            var lines = text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            return lines.Length > 0;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     public static bool IsValidPdf(byte[] data)
     {
         // PDF files must start with the PDF magic bytes: %PDF- (0x25 0x50 0x44 0x46 0x2D)
@@ -193,7 +212,8 @@ public class Utilities
             "application/xml" => SupportedContentType.Xml,
             "text/xml" => SupportedContentType.Xml,
             "application/pdf" => SupportedContentType.Pdf,
-            _ => throw new ArgumentException($"Unsupported content type '{mediaType}'. Only 'application/json', 'application/xml', 'text/xml', and 'application/pdf' are supported.")
+            "text/csv" => SupportedContentType.Csv,
+            _ => throw new ArgumentException($"Unsupported content type '{mediaType}'. Only 'application/json', 'application/xml', 'text/xml', 'application/pdf', and 'text/csv' are supported.")
         };
     }
 
