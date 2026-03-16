@@ -34,6 +34,7 @@ import {
   RadioGroup,
   Checkbox,
   Divider,
+  Input,
 } from '@fluentui/react-components'
 import { ArrowLeftRegular, CheckmarkRegular, ArrowImportRegular } from '@fluentui/react-icons'
 import { MainLayout } from '../layout'
@@ -199,6 +200,15 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalXS,
+  },
+  configRow: {
+    padding: tokens.spacingHorizontalL,
+    display: 'flex',
+    gap: tokens.spacingHorizontalXL,
+    flexWrap: 'wrap',
+  },
+  customDelimiterInput: {
+    maxWidth: '80px',
   },
 })
 
@@ -584,7 +594,7 @@ export const CsvViewer = () => {
         {/* Delimiter/config controls below editors */}
         <Card>
           <CardHeader header={<Text weight="semibold">Parse Settings</Text>} />
-          <div style={{ padding: tokens.spacingHorizontalL, display: 'flex', gap: tokens.spacingHorizontalXL, flexWrap: 'wrap' }}>
+          <div className={styles.configRow}>
             <div className={styles.configSection}>
               <Text className={styles.configLabel}>Delimiter</Text>
               <RadioGroup
@@ -600,11 +610,11 @@ export const CsvViewer = () => {
               {delimiterOption === '__custom__' && (
                 <div>
                   <Label>Custom character</Label>
-                  <input
-                    style={{ width: '60px', marginLeft: tokens.spacingHorizontalS }}
+                  <Input
+                    className={styles.customDelimiterInput}
                     maxLength={1}
                     value={customDelimiter}
-                    onChange={(e) => setCustomDelimiter(e.target.value)}
+                    onChange={(_, data) => setCustomDelimiter(data.value)}
                     placeholder="e.g. :"
                   />
                 </div>
