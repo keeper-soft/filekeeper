@@ -1,4 +1,4 @@
-import {useState, useEffect} from 'react'
+import {useState, useEffect, useRef} from 'react'
 import type {ReactNode} from 'react'
 import axios from 'axios'
 import {useDispatch, useSelector} from 'react-redux'
@@ -7,6 +7,7 @@ import customAxios from '../../utilities/custom-axios'
 import {AuthContext} from './AuthContext'
 import {logInUser, logOutUser} from '../../store/slices/user'
 import type {AppDispatch, RootState} from '../../store/store'
+import {persistor} from '../../store/store'
 import {clearDirectoryTree} from '../../store/slices/directoryTree'
 
 interface AuthProviderProps {
@@ -17,11 +18,24 @@ export const AuthProvider = ({children}: AuthProviderProps) => {
     const [isLoading, setIsLoading] = useState(true)
     const dispatch = useDispatch<AppDispatch>();
     const userState = useSelector((state: RootState) => state.user);
+    const directoryTenantId = useSelector((state: RootState) => state.directoryTree.tenantId);
+    // Ensure the cross-tenant check runs exactly once after the initial rehydration.
+    const tenantValidationDone = useRef(false);
+
     useEffect(() => {
-        // Authentication state is now persisted and rehydrated by redux-persist.
-        // No need to manually restore from localStorage.
+        if (tenantValidationDone.current) return;
+        tenantValidationDone.current = true;
+
+        // Validate that the persisted directoryTree belongs to the same tenant as
+        // the persisted user.  If they diverge (a different tenant was active
+        // previously), clear the stale tree to prevent cross-tenant data leakage.
+        const userTenantId = userState.tenant?.id;
+        if (directoryTenantId && userTenantId && directoryTenantId !== userTenantId) {
+            dispatch(clearDirectoryTree());
+        }
+
         setIsLoading(false);
-    }, [dispatch])
+    }, [dispatch, directoryTenantId, userState.tenant?.id])
 
     const login = async (email: string, password: string): Promise<boolean> => {
         setIsLoading(true)
@@ -59,6 +73,7 @@ export const AuthProvider = ({children}: AuthProviderProps) => {
         dispatch(clearDirectoryTree())
         localStorage.removeItem('jwtToken')
         localStorage.removeItem('cms-lite-user')
+        persistor.purge()
     }
 
     const value: AuthContextType = {
